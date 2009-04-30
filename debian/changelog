@@ -1,3 +1,15 @@
+tracker (0.6.94-1maemo1~unreleased) stable; urgency=low
+
+  * Fixes: NB#113528, Tracker indexer crashes after querying meta data of...
+  * Fixes: NB#109071, Error updating "Playlist:ValidDuration" property
+  * Fixes: NB#107962, trackerd crashes
+  * Fixes: GB#580586, FTBFS: undefined reference to `sqlite3_enable_load...
+  * Fixes several memory leaks
+  * Fixes missing break causing WHERE property to return ORDER property
+  * Added test cases for TrackerDataMetadata, TrackerThumbnailer, etc
+
+ -- Martyn Russell <martyn@imendio.com>  Fri,  1 May 2009 17:00:00 +0000
+
 tracker (0.6.93-6maemo1) stable; urgency=low
 
   * Fixes: NB#112393, tracker-extract crashes by freeing GStreamer pipe...
