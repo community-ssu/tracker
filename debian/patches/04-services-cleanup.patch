@@ -1,0 +1,100 @@
+diff --git a/data/services/default.service b/data/services/default.service
+index 94f5883..9c02003 100644
+--- a/data/services/default.service
++++ b/data/services/default.service
+@@ -160,21 +160,6 @@ HasMetadata=false
+ HasFullText=true
+ HasThumbs=false
+ 
+-
+-[Development]
+-DisplayName=Development
+-Description=Development and source code files
+-Parent=Files
+-UIVisible=true
+-Icon=applications-development
+-ContentMetadata=File:Contents
+-Mimes=application/x-perl;application/x-shellscript;application/x-php;application/x-java;application/x-javascript;application/x-glade;application/x-csh;application/x-class-file;application/x-awk;application/x-asp;application/x-ruby;application/x-m4;text/x-m4;text/x-c++;text/x-adasrc;text/x-c;text/x-c++hdr;text/x-chdr;text/x-csharp;text/x-c++src;text/x-csrc;text/x-dcl;text/x-dsrc;text/x-emacs-lisp;text/x-fortran;text/x-haskell;text/x-literate-haskell;text/x-java;text/x-java-source" ,text/x-makefile;text/x-objcsrc;text/x-pascal;text/x-patch;text/x-python;text/x-scheme;text/x-sql;text/x-tcl;
+-ShowServiceFiles=true
+-ShowServiceDirectories=true
+-HasMetadata=false
+-HasFullText=true
+-HasThumbs=false
+-
+ [Other]
+ DisplayName=Other Files
+ Description=All other files that do not belong in any other category
+@@ -197,18 +182,6 @@ TabularMetadata=Email:Sender;Email:Subject;Email:Date;
+ TileMetadata=Email:Sender;Email:Subject;Email:Date;Email:SentTo;Email:CC;Email:Attachments
+ ContentMetadata=Email:Body
+ 
+-[EvolutionEmails]
+-DisplayName=Evolution Emails
+-Description=Evolution based emails
+-Parent=Emails
+-ViewerExec=evolution "%1"
+-KeyMetadata1=Email:Subject
+-KeyMetadata2=Email:Sender
+-KeyMetadata6=Email:Date
+-TabularMetadata=Email:Sender;Email:Subject;Email:Date;
+-TileMetadata=Email:Sender;Email:Subject;Email:Date;Email:SentTo;Email:CC;Email:Attachments
+-ContentMetadata=Email:Body
+-
+ [ModestEmails]
+ DisplayName=Modest Emails
+ Description=Modest based emails
+@@ -221,54 +194,18 @@ TabularMetadata=Email:Sender;Email:Subject;Email:Date;
+ TileMetadata=Email:Sender;Email:Subject;Email:Date;Email:SentTo;Email:CC;Email:Attachments
+ ContentMetadata=Email:Body
+ 
+-[ThunderbirdEmails]
+-DisplayName=Thunderbird Emails
+-Description=Thunderbird based emails
+-Parent=Emails
+-ViewerExec=thunderbird -viewtracker "%1"
+-KeyMetadata1=Email:Subject
+-KeyMetadata2=Email:Sender
+-KeyMetadata6=Email:Date
+-TabularMetadata=Email:Sender;Email:Subject;Email:Date;
+-TileMetadata=Email:Sender;Email:Subject;Email:Date;Email:SentTo;Email:CC;Email:Attachments
+-ContentMetadata=Email:Body
+-
+-[KMailEmails]
+-DisplayName=KMail Emails
+-Description=KMail based emails
+-Parent=Emails
+-ViewerExec=kmail "%1"
+-KeyMetadata1=Email:Subject
+-KeyMetadata2=Email:Sender
+-KeyMetadata6=Email:Date
+-TabularMetadata=Email:Sender;Email:Subject;Email:Date;
+-TileMetadata=Email:Sender;Email:Subject;Email:Date;Email:SentTo;Email:CC;Email:Attachments
+-ContentMetadata=Email:Body
+-
+ [EmailAttachments]
+ DisplayName=Email Attachments
+ Description=All files that are attached to an Email
+ UIVisible=true
+ Icon=stock_attach
+ 
+-[EvolutionAttachments]
+-DisplayName=Evolution Email Attachments
+-Description=All files that are attached to an Evolution Email
+-Parent=EmailAttachments
+-Icon=stock_attach
+-
+ [ModestAttachments]
+ DisplayName=Modest Email Attachments
+ Description=All files that are attached to an Modest Email
+ Parent=EmailAttachments
+ Icon=stock_attach
+ 
+-[KMailAttachments]
+-DisplayName=KMail Email Attachments
+-Description=All files that are attached to an KMail Email
+-Parent=EmailAttachments
+-Icon=stock_attach
+-
+ [Conversations]
+ DisplayName=Conversations
+ Description=Conversation log files

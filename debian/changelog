@@ -1,0 +1,1020 @@
+tracker (0.6.93-6maemo1) stable; urgency=low
+
+  * Fixes: NB#112393, tracker-extract crashes by freeing GStreamer pipe...
+	
+ -- Martyn Russell <martyn@imendio.com>  Fri, 24 Apr 2009 14:00:00 +0000
+	
+tracker (0.6.93-5maemo1) unstable; urgency=low
+
+  * Fixes reading past genre name boundaries in MP3 extractor.
+  * Fixes MP3 extractor leak and some minor memory use improvements.
+  * Fixes albumart name stripping code to be UTF8 compliant.
+  * Fixes albumart name stripping to follow specification
+  * Fixes crawling removable media is disabled with READONLY flag.
+  * Fixes tracker-dbus-test output to be UTF8 compliant.
+  * Fixes compilation warnings in push modules.
+  * Adds utils/albumart-strip command to test broken albums/artists.
+  * Adds albumart name stripping test cases.
+  * Adds tracker-extract debug about modules used per file and on init.
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 22 Apr 2009 17:30:00 +0000
+
+tracker (0.6.93-4maemo1) unstable; urgency=low
+
+  * Fixes: NB#110310, metadata_get_multiple returns nothing if some file...
+  * Fixes: NB#111560, tracker-extract crashes on mp3 files bigger than 20 MB
+  * Fixes upstream #578159, Tracker starts to index when removable media...
+  * Fixes frequent cache refresh/indexer pausing, 3 mins to 5 mins
+  * Improves JPEG extraction speed, don't worry about unknown tags.
+
+ -- Martyn Russell <martyn@imendio.com>  Tue, 21 Apr 2009 11:00:00 +0000
+
+tracker (0.6.93-3maemo1) unstable; urgency=low
+
+  * Fixes: NB#109891, If deleting last music track or last video...
+  * Fixes indexer crash with unset GError
+  * Fixes indexer crash when extractor fails to return a PID
+  * Fixes TTL rdf:type->service type so MMC files are not always "Files"
+
+ -- Martyn Russell <martyn@imendio.com>  Fri, 17 Apr 2009 16:00:00 +0000
+
+tracker (0.6.93-2maemo1) unstable; urgency=low
+
+  * Fixes: NB#108361, Tracker crashing if commo.db is corrupt
+
+ -- Martyn Russell <martyn@imendio.com>  Thu, 16 Apr 2009 15:30:00 +0000
+
+tracker (0.6.93-1maemo2) unstable; urgency=low
+
+  * Fixes: NB#109046, Tracker is slow to index all the images in the...
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Wed, 15 Apr 2009 21:37:00 +0000
+
+tracker (0.6.93-1maemo1) unstable; urgency=low
+
+  * Try to fix bug 109046 but didn't
+  * Try to fix bug 108361 but didn't
+  * Try to fix bug 109891 but didn't
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 15 Apr 2009 16:00:00 +0000
+
+tracker (0.6.92-7maemo1) unstable; urgency=low
+
+  * Fixes tracker-preferences so it mangages removable-devices option.
+  * Fixes tracker config typo.
+  * Fixes tracker-indexer to not enter finished state after flushing.
+
+ -- Martyn Russell <martyn@imendio.com>  Wed,  8 Apr 2009 13:30:00 +0000
+
+tracker (0.6.92-6maemo1) unstable; urgency=low
+
+  * Fixes tracker-extract not sending queued album art to thumbnailerd
+
+ -- Martyn Russell <martyn@imendio.com>  Tue,  7 Apr 2009 17:30:00 +0000
+
+tracker (0.6.92-5maemo1) unstable; urgency=low
+
+  * Fixes trackerd to call nice(19) for crawling ONLY else nice(default).
+  * Fixes libtracker-common preprocessor checks for thumbnailer/albumart.
+  * Fixes tracker-extract multiple TrackerHal instances, 2x faster now.
+  * Fixes tracker-extract tests by loading modules not directly linking.
+  * Fixes tracker-applet by adding proper marshal generation for signals.
+  * Added error handling for "Can't store word" to applet.
+
+ -- Martyn Russell <martyn@imendio.com>  Tue,  7 Apr 2009 16:45:00 +0000
+
+tracker (0.6.92-4maemo2) unstable; urgency=low
+
+  * Fixes upstream GB#577656, tracker doesn't build on non-linux platforms
+  * Fixes upstream GB#577655, tracker-indexer.c fails to compile when...
+  * Fixes upstream LP#355982, crash in tracker-turtle.c with fclose() 
+  * Fixes SIGSEGV for tracker-extract from exceeding setrlimit() mem.
+  * Fixes Raptor dependency to 1.4.17, need _FEATURE_WRITE_BASE_URI.
+  * Fixes indexer flush time to be optimized for Maemo platform, patch 09.
+
+ -- Martyn Russell <martyn@imendio.com>  Tue,  7 Apr 2009 13:30:00 +0000
+	
+tracker (0.6.92-4maemo1) unstable; urgency=low
+
+  * Fixes upstream GB#577656, tracker doesn't build on non-linux platforms
+  * Fixes upstream GB#577655, tracker-indexer.c fails to compile when...
+  * Fixes upstream LP#355982, crash in tracker-turtle.c with fclose() 
+  * Fixes SIGSEGV for tracker-extract from exceeding setrlimit() mem.
+  * Fixes Raptor dependency to 1.4.17, need _FEATURE_WRITE_BASE_URI.
+	
+ -- Martyn Russell <martyn@imendio.com>  Mon,  6 Apr 2009 16:30:00 +0000
+
+tracker (0.6.92-3maemo1) unstable; urgency=low
+
+  * Fixes: NB#107570, tracker-extract crash just after device bootup
+  * Fixes gstreamer extractor memory leaks, a lot of leaks.
+  * Fixes gstreamer extractor memory corruption.
+  * Fixes gstreamer extractor by stopping extraction on DURATION messages
+  * Fixes album art memory management and access() to NULL paths.
+  * Improved performance by sending items to thumbailer AFTER indexing 
+	
+ -- Martyn Russell <martyn@imendio.com>  Fri,  3 Apr 2009 17:00:00 +0000
+
+tracker (0.6.92-2maemo1) unstable; urgency=low
+
+  * Fixes: NB#106639, Music-Unknown Category  displayed in Genre view
+  * Fixes: NB#109172, Video Library: RM , RMJ files listed in Video Library.
+  * Fixes: NB#107122, Video:Duration is shown as -:- in video library view
+  * Fixes: NB#108793, Not able to filer images with XMP date
+  * Fixes adding BUILT_SOURCES to EXTRA_DIST for many Makefile.ams
+  * Fixes not using plural translations in tracker-info.
+  * Fixes several memory leaks/corruptions in gstreamer/mp3/png extractors.
+  * Improves performance/mem of GFile->GQueue in tracker-monitor.c
+	
+ -- Martyn Russell <martyn@imendio.com>  Thu,  2 Apr 2009 17:30:00 +0000
+
+tracker (0.6.92-1maemo1) unstable; urgency=low
+
+  * Fixes: NB#108819, tracker-indexer is crashing.
+  * Fixes: NB#108331, Memory Leak found for tracker-extract command
+  * Fixes: NB#106085, Tracked database is not updated when images were...
+  * Fixes: NB#100642, tracker is still listing the removed tags.
+  * Fixed memory leak in indexer's removable-device module.
+  * Fixed memory leak in indexer's push module, close the dir.
+  * Fixed TrackerDBIndex _update_word() memmove outside boundries.
+  * Added new API tracker_metadata_get_multiple().
+  * Added pre-umount check there's an item before checking mount files.
+  * Added $HOME/MyDocs/.sounds/Ringtones/ to ignore list.
+  * Updated tracker-info to use _metadata_{get|_multiple}() APIs.
+  * Updated extractors to use tracker_file_{open|close} with posix_fadvise
+  * Removed all references to file-index-update.db, no longer used.
+	
+ -- Martyn Russell <martyn@imendio.com>  Wed,  1 Apr 2009 17:30:00 +0000
+
+tracker (0.6.91-7maemo1) unstable; urgency=low
+
+  * Sync with upstream -r3141 to fix File counts issues in FMP.
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Fri, 27 Mar 2009 15:35:00 +0000
+
+tracker (0.6.91-6maemo2) unstable; urgency=low
+
+  * Fixed packaging to build correctly libtracker client dev package
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Thu, 26 Mar 2009 15:10:00 +0000
+
+tracker (0.6.91-6maemo1) unstable; urgency=low
+
+  * Added GVolumeMonitor::mount-pre-unmount support, GIO patch pending.
+  * Fixed missing condition for JOIN in RDF query.
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 25 Mar 2009 18:30:00 +0000
+
+tracker (0.6.91-5maemo2) unstable; urgency=low
+
+  * Include tracker-processes in build.
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 25 Mar 2009 14:30:00 +0000
+
+tracker (0.6.91-5maemo1) unstable; urgency=low
+
+  * Updated default configuration patch to include .camera dir
+  * Fixes: NB#107436, captured videos are not getting refreshed...
+  * Fixes: NB#102800, Crash corruption code
+  * Fixes: LP#347352, trackerd NULL crasher in g_list_find_custom().
+  * Fixes trackerd int comparison with unset variable for GetStats.
+  * Fixes trackerd not setting throttle when batt is charging/discharging.
+  * Fixes trackerd battery percentage log message (was always 0%).
+  * Disabled static libraries by default.
+  * Improved build help strings for mail push modules.
+  * Improved killall tracker-extract in indexer with GetPid DBus func.
+  * Improved debugging when loading DB files, more info about failures.
+  * Added collation keys to Services table and additional indices.
+  * Added --kill and --terminate to tracker-processes.
+  * Added --hard-reset to tracker-processes to --kill and remove all DBs.
+	
+ -- Martyn Russell <martyn@imendio.com>  Wed, 25 Mar 2009 14:00:00 +0000
+
+tracker (0.6.91-4maemo1) unstable; urgency=low
+ 
+  * Fixed tracker-stats to now list parent classes like "Files".
+  * Fixed int64 issues when calling thumbnailer (with early DBus versions).
+  * Fixed broken image.metadata file, image ontology was missing.
+  * Fixed libtracker-data, make sure no empty strings are added to DB.
+  * Added libtool versioning to library names.
+  * Added SIGKILL for tracker-extract on DBus message timeouts/errors.
+  * Added tracker-processes to list all tracker processes running.
+  * Added trackerd cache for GetStats DB call for quick replies.
+  * Added DB indexes to improve GetStats DB call.
+  * Added error handling when loading .metadata and .service files.
+  * Added collation for sorting correctly with unique values.
+  * Removed support for Evolution IMAP DB indexer module.
+  * Improved logging when creating/loading ontology.
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 20 Mar 2008 19:00:00 +0000
+
+tracker (0.6.91-3maemo1) unstable; urgency=low
+
+  * Fixes: NB#95573, Keep quiet, we're in a call
+  * Fixes: NB#90455, Tracker doesn't index Geotags metadata...
+  * Fixes: NB#106424, Tracker does not extract metadata correctly
+	
+ -- Martyn Russell <martyn@imendio.com>  Wed, 18 Mar 2008 18:30:00 +0000
+
+tracker (0.6.91-2maemo1) unstable; urgency=low
+
+  * Fixes: NB#106201, tracker-extract is crashing when extracting the...
+  * Fixes: NB#104084, Audio files are not sorted in alphabetical order.
+  * Fixed tracker-extract to transform files passed using -f to full paths.
+  * Fixed tracker-indexer to index files on diff mtime not newer mtime.
+  * Fixed tracker-indexer incorrect logic when signalling status.
+  * Fixed libtracker-data to fail gracefully if RDF type doesn't exist.
+  * Fixed debian build warnings changing $(Source-Version) to ":Version".
+  * Removed debian/watch file.
+
+ -- Martyn Russell <martyn@imendio.com>  Tue, 17 Mar 2008 18:30:00 +0000
+
+tracker (0.6.91-1maemo1) unstable; urgency=low
+
+  * Fixed upstream bug #573834, g_timeout_add_seconds should be preferred...
+  * Fixed upstream bug #575271, Confusion and error with deskbar-applet...
+  * Fixed upstream bug #575332, crashes when showing statistics
+  * Fixed tracker-daemon DBus "ServiceStatisticsUpdated" signal signature.
+  * Fixed double call to UTF8 string check call in _result_to_ptr_array(), 
+  * Fixed missing include in tracker-extract-pdf.c.
+  * Fixed upstream bug #570232, SetOption uses sqlite REPLACE which...
+  * Fixed RDF query to return undefined int values with empty fields.
+  * Fixed serious performance issue introduced with SCHED_IDLE, reverted.
+  * Fixed indexer memory corruption when setting tags.
+	
+ -- Martyn Russell <martyn@imendio.com>  Mon, 16 Mar 2008 18:00:00 +0000
+
+tracker (0.6.90-10maemo1) unstable; urgency=low
+
+  * Fixes: NB#105133, Mafw-tracker-source does not emit container-...
+  * Fixes: NB#94201, NP-Audio:Album art not displayed.
+  * Fixed upstream bug #489876, Unknown creation date for pdf files
+  * Fixed upstream bug #503595, check/uncheck "Genertate thumbnails"...
+  * Fixed upstream bug #519222, trackerd crashes when system dbus is...
+  * Fixed upstream bug #455588, indexing of Abiword templates slow
+  * Fixed not signalling 'ServiceStatisticsUpdated' on MMC removal.
+  * Fixed a crash when removing a resource from a removable device.
+  * Fixed TrackerDBIndex so test case no longer fails with async flushing.
+  * Fixed test case failures for MP3 files.
+  * Fixed subsequent album art requests trying if already downloading
+  * Removed XESAM support completely.
+  * Reduced the amount of debugging produced by HAL module.
+	
+ -- Martyn Russell <martyn@imendio.com>  Thu, 12 Mar 2008 18:00:00 +0000
+	
+tracker (0.6.90-9maemo1) unstable; urgency=low
+
+  * Fixes: NB#96314, libexempi adds Creator in three different locations...
+  * Fixes: LP#339560, buffer overflow getting file content.
+  * Fixed support for SCHED_IDLE.
+  * Fixed config so we make sure we load defaults for missing options.
+  * Fixed warning in indexer about thumbnailer delete action reply.
+  * Fixed regression, use "/" on end of generated URI paths for raptor.
+  * Fixed leaking file descriptors thought to cause "too many open files".
+  * Fixed negative underflow with gint16 value clamp in TrackerDBIndex.
+  * Fixed indexer corner case to flush when an item has been removed.
+  * Fixed .xsession-errors being populated with startup version info
+  * Added Image:HasKeywords field for performance.
+	
+ -- Martyn Russell <martyn@imendio.com>  Tue, 10 Mar 2008 17:00:00 +0000
+
+tracker (0.6.90-8maemo1) unstable; urgency=low
+
+  * Fixed small regression in group concatenation db function.
+  * Fixed overwrite existing logs if already running (indexer/extractor).
+  * Fixed QDBM statistics for deleted items.
+  * Fixes upstream bug #571573, Tracker's deskbar module has incorrect...
+  * Fixes deskbar so we find the right DBus service names.
+  * Fixes URI creation in indexer removable device module.
+  * Fixes leaks in indexer removable device module.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri, 6 Mar 2008 17:30:00 +0000
+
+tracker (0.6.90-7maemo1) unstable; urgency=low
+
+  * Fixes: NB#103375, File /etc/X11/Xsession.post/31tracker should be part...
+  * Fixes: NB#102246, Container name is ‘blank’ within Artists/Albums...
+  * Fixes: NB#103260, Empty 'Unknown' containers under Artists and Album...
+  * Fixes: NB#103198, Unknown Category  displayed in Genre view
+  * Fixes: NB#102210, Number of images in tracker response depends on... 
+  * Fixes: NB#91158, Restore factory settings is not working.
+  * Fixes: NB#99823, Album art image gets corrupted if Artist and Album...
+  * Fixed MP3 frame size calculation.
+  * Fixed log handling, don't overwrite existing logs if already running.
+  * Fixed indexer responsiveness for ttl restores by iterating main loop.
+  * Improved speed by using the cache for recursive deletes in the daemon.
+  * Improved speed by not setting DB page sizes so SQLite decides for us.
+  * Improved speed by removing UTF8 collation from Services table.
+  * Improved speed by making indexer flushing work asynchronously.
+  * Improved speed by making indexer flush frequency variable based on queue.
+  * Removed duplicate calls to g_strstrip() for metadata in extractor.
+  * Removed unused extractors exif and gstreamer-playbin.
+  * Added warnings when we try to write to QDBM after opening as READONLY
+  * Added DB versions for vstore and 0.6.91 which force reindex if different.
+	
+ -- Martyn Russell <martyn@imendio.com>  Thu,  5 Mar 2008 17:00:00 +0000
+
+tracker (0.6.90-6maemo1) unstable; urgency=low
+
+  * Fixed upstream bug #572237, Remove deprecated Glib symbols
+  * Fixed upstream bug #571736, Get rid of deprecated libart_lgpl
+  * Fixed tracker-indexer reporting elapsed times suriously.
+  * Fixed tracker-indexer memory leak when retrieving embedded metadata.
+  * Fixed compiler warnings.
+  * Improved database GROUP_CONCAT aggregate function.
+  * Improved Backup/Turtle support.
+  * Added org.freedesktop.Tracker.Backup DBus interface.
+  * Added collation locale startup check and regeneration on change.
+  * Added GCC gcov support.
+  * Added $HOME/MyDocs/core-dumps to the list of directories to ignore.
+  * Added $HOME/MyDocs/cities to the list of directories to ignore.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri, 27 Feb 2008 17:00:00 +0000
+
+tracker (0.6.90-5maemo2) unstable; urgency=low
+
+  * Included actual libraries (not only links) in tracker package.
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Fri, 27 Feb 2008 15:05:00 +0000
+
+tracker (0.6.90-5maemo1) unstable; urgency=low
+
+  * Fixes: NB#99827, Tracker is listing the files from memory card even after...
+  * Fixed problems in joining of order fields.
+  * Fixed issue with integer to string conversion in the database.
+  * Added new DBus function to get concatenated metadata group fields.
+  * Added new DBus function to Backup metadata to Turtle file.
+  * Added support for coverage reporting with gcov.
+	
+ -- Martyn Russell <martyn@imendio.com>  Wed, 25 Feb 2008 20:00:00 +0000
+
+tracker (0.6.90-4maemo1) unstable; urgency=low
+
+  * Fixes: NB#102800, Crash corruption code
+  * Fixes: NB#102606, Tracker doesn't get duration of some MP3 filex
+  * Fixes: NB#102167, ML: Songs deleted from MMC shown in Library
+  * Fixes: NB#98297, tracker-stats values are not changed even after deleting...
+  * Fixed tracker-extract blocking indefinitely for buggy modules.
+  * Fixed GetStats to check mounted volumes and to use SQL COUNT function.
+  * Fixed TrackerDBIndex so words with negative weight are actually indexed. 
+  * Added IPTC support for TIFF and JPEG extractors
+  * Added dependency for libiptcdata.
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 25 Feb 2008 10:50:00 +0000
+
+tracker (0.6.90-3maemo1) unstable; urgency=low
+
+  * Fixed indexer not shutting down and stopping before it should.
+  * Fixed indexer to reset indexed/processed stats after finishing.
+  * Fixed standard monitored directory list to omit .games/
+  * Fixed Makefiles which were missing WARN_CFLAGS.
+  * Updated extractors to use decodebin not playbin for speed.
+  * Updated project wide calls for mtime/size to use GIO not g_lstat().
+  * Removed all unused libtracker-common file functions.
+  * Removed a lot of unused code after adding WARN_CFLAGS.
+	
+ -- Martyn Russell <martyn@imendio.com>  Thu, 19 Feb 2008 16:00:00 +0000
+
+tracker (0.6.90-2maemo1) unstable; urgency=low
+
+  * Improved indexer flush time from 60 seconds to 30 seconds, seems faster.
+  * Improved daemon dbus request pause time from 10 seconds to 5 seconds.
+  * Improved tracker-status so we can now follow real time state updates.
+  * Improved tracker utilities to g_print() a note if --limit is reached.
+  * Improved tracker utilities to use plural based translations.
+  * Improved tracker-services to sort properties listed.
+  * Fixed daemon so it now monitors disk space (was in indexer).
+  * Fixed daemon so it now monitors battery percentage (was in indexer).
+  * Fixed daemon state machine so we ALWAYS log state changes.
+  * Fixed daemon state machine so we don't return Initializing after index.
+  * Fixed album art so we don't add the artist name to the request.
+  * Added a configure switch to disable decompressing .ps.gz files to /tmp.
+  * Disabled recently added SCHED_IDLE call, breaks build for Maemo.
+	
+ -- Martyn Russell <martyn@imendio.com>  Tue, 17 Feb 2008 18:25:00 +0000
+
+tracker (0.6.90-1maemo1) unstable; urgency=low
+
+  * Fixes: NB#101593, images created from sketch application are listed...
+  * Fixes: NB#101142, Sorting by Image:Date is incorrect	
+  * Fixes: NB#95573, Keep quiet, we're in a call
+  * Fixed extractor messaging so we use debug statements for metadata.
+  * Fixed indexer to delete content for removed services.
+  * Fixed album art local URI not always being passed.
+  * Reworked the src/plugin infrastructure to be more generic.
+  * Added initial push plugin support for KMail and RSS.
+  * Added NULL support to outer joins for conditions with empty strings.
+  * Added ModuleConfig option to ignore directories based on contents.
+  * Added album art code to libtracker-common for general use.
+
+ -- Martyn Russell <martyn@imendio.com>  Thu, 12 Feb 2008 17:25:00 +0000
+
+tracker (0.6.6-34osso1) unstable; urgency=low
+
+  * Fixes: NB#98896, Indexing is blocked by events elsewhere
+  * Fixed a memory leak in the album art extractor.
+  * Fixed indexer's serious speed issue when moving big directories.
+  * Fixed all filename strings not created using g_filename_to_uri().
+  * Fixed 2 major binary search show stopper issues.
+  * Fixed indexer to not unindex QDBM data, deleting is way too slow.
+  * Fixed daemon to not send files to indexer when paused.
+  * Fixed extract crashes with test data of 5000 MP3s.
+  * Fixed "indexed" item count reported in logging.
+  * Improved database index schemes and query speed.
+  * Improved daemons' status handling, all done centrally now.
+  * Updated compile warning setting default to maximum without -Werror.
+  * Updated extractor to use DBus to communicate for stability.
+  * Added compile warning setting to configure summary.
+  * Added "Video:Source" tag to the metadata extracted.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri,  6 Feb 2008 21:35:00 +0000
+
+tracker (0.6.6-33osso1) unstable; urgency=low
+
+  * Fixes: NB#98896, Indexing is blocked by events elsewhere
+  * Fixed extractor to queue the thumbnailer with correct album art path.
+  * Fixed trackerd recursive loop creating paths on removeable media.
+
+ -- Martyn Russell <martyn@imendio.com>  Tue,  3 Feb 2008 17:35:00 +0000
+	
+tracker (0.6.6-32osso1) unstable; urgency=low
+
+  * Added thumbnailer initialization timeout option (was 30 seconds).
+  * Fixed tracker-extract to initialize the thumbnailer immediately.
+	
+ -- Martyn Russell <martyn@imendio.com>  Mon,  2 Feb 2008 12:30:00 +0000
+	
+tracker (0.6.6-31osso1) unstable; urgency=low
+
+  * Fixes: NB#99035, Rapid changes may result in a file dropping from the...
+  * Fixes: NB#95227, Tracker is not returning get unique values properly...
+  * Fixes: NB#91312, 'Image:Height', 'Image:Width', not reported for gif...
+  * Fixes: NB#99281, Tracker fails to extract duration for some mp3 files
+  * Fixed album art extraction from MP3s to work for removable media.
+  * Fixed monitor module crasher when replacing hash table items.
+  * Fixed monitor module crasher when we can't get the module name
+  * Fixed indexer to handle move operations that overwrite the dest file
+  * Fixed indexer to use current time for 'File:Modified' as default.
+  * Fixed indexer checking against outdated mtimes.
+  * Fixed indexer leak when moving files.
+  * Fixed indexer to delete children that no longer exist in directories.
+  * Fixed RDF filtering for multiple tags.
+  * Removed black list from monitor code in favor of the cache.
+  * Improved RDF querying performance by including tags.
+  * Improved configure to not check GLib version for unit test support.
+  * Updated GLib dependency to 2.16 from 2.15.
+  * Updated NEWS, TODO, README in preparation for upstream release.
+  * Added initial tagreadbin gstreamer extractor.
+  * Added a default value to 'Image:Date' for gstreamer extractor.
+  * Added test cases for file access.
+  * Added test cases for TIFFs.
+  * Added test cases for AVIs.
+  * Added test cases for PNGs.
+  * Added test cases for EXIF data.
+	
+ -- Martyn Russell <martyn@imendio.com>  Fri, 30 Jan 2008 17:00:00 +0000
+
+tracker (0.6.6-30osso2) unstable; urgency=low
+
+  * Fixed debian/changelog to provide a satisfactory integration.
+	
+ -- Ivan Frade <ivan.frade@nokia.com>  Wed, 28 Jan 2008 12:26:59 +0000
+
+tracker (0.6.6-30osso1) unstable; urgency=low
+
+  * Fixes: NB#98516, Not able to filter favourite images in image vie...
+  * Fixes: NB#91165, Audio Artist and Genre are reported different...
+  * Fixes: NB#96018, Tracker is showing different values for some of...
+  * Fixes: NB#97049, Tracker is going through both internal and exter...
+  * Fixes: NB#98170, multiple crashes in tracker_escape_metadata
+  * Fixed album art extractions that have 1 character long album names.
+  * Fixed evolution module recursively indexing its content.
+  * Fixed TIFF ascii field handling.
+  * Added 'audio/x-pn-realaudio-plugin' mime type to play lists.
+  * Added a tool to convert .service/.metadata files to XML RDF.
+  * Added a tool to convert XML RDF files to .ini file format.
+  * Added module config option to not index files too often.
+  * Added test cases for JPEG files.
+  * Added test cases for MPEG files.
+  * Added .metadata files and implementation for GAIM conversations.
+  * Added more date fields to be extracted for the XMP extractor.
+	
+ -- Martyn Russell <martyn@imendio.com>  Fri, 23 Jan 2008 17:00:00 +0000
+	
+tracker (0.6.6-29osso2) unstable; urgency=low
+
+  * Added this entry to fix integration problems
+	
+ -- Ivan Frade <ivan.frade@nokia.com>  Fri, 23 Jan 2008 16:59:59 +0000
+	
+tracker (0.6.6-29osso1) unstable; urgency=low
+
+  * Fixes: NB#97106, Tracker-extract crashed while extracting data for...
+  * Fixes: NB#96995, Tracker is not displaying info of files with single...
+  * Fixes: NB#95248, Incorrect Child count is displayed in Metadata for...
+  * Fixes: NB#97029, Duplication in containers with same meta data seen
+  * Fixes: NB#97765, Tracker is not responding to the queries from Image...
+  * Fixes: NB#97125, Content categorization fails for Pop Genre
+  * Fixes: NB#97610, Question mark in mp3 titles
+  * Fixes: NB#95754, Tracker extract is crashing when parsing through...
+  * Fixes: upstream #441739, Hit count not updated after deleting files
+  * Fixed gint/guint bug with indexer word count update.
+  * Fixed performance issues with data lookups using INNER not OUTER joins.
+  * Fixed several build issues found by make distcheck.
+  * Fixed frame size and count calculations for MPEG-2/MPEG-25.
+  * Fixed thumnailer subsystem shutdown too early in tracker-extract.
+  * Fixed indexer critical warning spamming if module has no dir config
+  * Fixed a potential crasher in evolution pop module to get message flags.
+  * Fixed invalid data types in email/image metadata so they are recognized.
+  * Fixed metadata time_t usage so strings are used instead of dates.
+  * Added some initial test cases for tracker-extract.
+  * Added support for new Evolution plugin (push mechanism, not pull).
+	
+ -- Martyn Russell <martyn@imendio.com>  Fri, 16 Jan 2008 14:00:00 +0000
+
+tracker (0.6.6-28osso1) unstable; urgency=low
+
+  * Fixes upstream bug #563909, Canonicalize command line options
+  * Fixes upstream bug #557979, tracker-preferences.desktop categories
+  * Fixes upstream bug #493049, Trailing space in an original message in...
+  * Fixed files module to not sniff mime type if file doesn't exist.
+  * Fixed the paused_on_battery in status signal, use HAL not config value.
+  * Fixed evolution imap handling for databases with no folders.
+  * Fixed all metadata date storage in the DB as unix time.
+  * Fixed indexer to not update static db items, it is expensive.
+  * Fixed indexer to honor -f switch even if trackerd shuts down.
+  * Added initial tests for tracker-extract.
+  * Added missing metadata for mp3s, such as tracker number.
+  * Improved the number of processed/indexed indexer status feedback.
+  * Improved the evolution module in several ways.
+	
+ -- Martyn Russell <martyn@imendio.com>  Fri,  9 Jan 2008 14:00:00 +0000
+
+tracker (0.6.6-27osso2) unstable; urgency=low
+
+  * Removed .la files from tracker package.
+  * Removed all filters (are useless on the device) from tracker package.
+  * Fixes: NB#93359 Tracker HTML filter is broken
+  * Fixes: NB#95151 rpm playlists are not listed in tracker source
+  * Fixes: NB#96999 Tracker is omitting last character of the "Audio:Comment"... 
+  * Fixes: NB#95873 Duration not extracted
+  * Fixes: NB#95227 Tracker is not returning get unique values properly...
+  * Fixed compilation warnings in very strict mode.
+  * Defined Playlist:TotalLength as non-embedded
+  * Removed deprecated glib symbols
+	
+ -- Ivan Frade <ivan.frade@nokia.com>  Tue, 02 Jan 2009 18:39:00 +0200
+	
+tracker (0.6.6-26osso1) unstable; urgency=low
+
+  * Fixes: NB#94201, NP-Audio:Album art not displayed.
+  * Fixes: NB#95215, Tracker source does not emit container-changed signal
+  * Fixes: NB#90111, Indexing delayed by new files appearing in the same...
+  * Fixes: NB#90700, Double sending of files for processing--with having...
+  * Fixes: NB#95928, Tracker is not indexing .rm files
+  * Fixes: NB#95545, Tracker is not indexing /home/user/MyDocs/*
+  * Fixed 2 spaces vs 1 space filename issue with album art.
+  * Fixed remaining escaping issues for metadata extraction for tracker-extact.
+  * Fixed MP3 extraction which was causing serious indexing speed delays.
+  * Fixed tracker-extract to initialize the thumbnailer preventing warnings.
+  * Updated patch 02 to make the config default value for sleeping 7 seconds.
+  * Updated tracker.sh to not include -s parameters to use the config instead.
+  * Added support for ANALYZE on the databases after finishing indexing.
+  * Added indexes to the Services table for some common fields.
+  * Added Turtle (backup/restore) support of the database.
+  * Added tighter warnings for compilation.
+  * Disabled debugging in tracker-extract which was flooding the console.
+	
+ -- Martyn Russell <martyn@imendio.com>  Fri, 19 Dec 2008 17:00:00 +0000
+
+tracker (0.6.6-25osso2) unstable; urgency=low
+
+  * Removed static libraries (*.a) from .install files.
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Mon, 15 Dec 2008 10:39:00 +0200
+	
+tracker (0.6.6.25osso1) unstable; urgency=low
+
+  * Updated patch 02-default-config.patch commenting out the MyDocs
+    folder monitor. It is avoiding to index the hidden directories 
+    under it.
+  * Disabled compilation of static libraries
+  * Disabled verbosity on the extractor
+  * Fixed help output in command line tools
+  * Fixed support for empty strings as metadata values
+  * Fixed includes in tracker.h to avoid dbus problem
+  * Added support for multiple values in keyword fields
+  * Added support for relative paths in tracker tools
+  * Continue checking disk space after stopped (indexer)
+  * Fixes: NB#93575 oTracker produces thumbnails not for all indexed images.
+  * Requesting a thumbnail for embedded album-art
+	
+ -- Ivan Frade <ivan.frade@nokia.com>  Fri, 12 Dec 2008 17:09:00 +0200
+	
+tracker (0.6.6-24osso1) unstable; urgency=low
+
+  * Fixes: NB#93928, DC:Date contains File:Modified instead of Image:Date
+  * Fixes: NB#91827, DC:Date is empty in Search.Query method
+  * Fixes: NB#93960, Witnessed crash in tracker-indexer
+  * Fixes: NB#93348, Incorrect song durations.
+  * Fixes: NB#93935, Tracker blocked when requesting unique values in ...
+  * Fixes: NB#93962, DC:Date contains File:Modified instead of Image:Date	
+  * Fixed recursive delete SQL statement.
+  * Fixed recursive delete so we don't call it on every file, only folders.
+  * Fixed tracker-indexer -p.
+  * Fixed calling stat() on deleted and moved files.
+  * Fixed tracker-preferences to not ask to reindex on every apply/ok. 
+  * Fixed tracker-preferences evolution option to enable/disable.
+  * Fixed build for SUN compilers which don't have __FUNCTION__.
+  * Fixed indexer to not load modules disabled in the config.
+  * Fixed missing function warnings generated by gaim-conversations module.
+  * Fixed a TrackerConfig memory leak.
+  * Fixed the GLib dependency in configure to be 2.16 since we require it.
+  * Fixed package check for helixbin.
+  * Fixed thumbnailer dbus proxy object leak.
+  * Fixed some DBus timeout errors for keywords/files interfaces. 
+  * Removed monitors when unmounting or folders are deleted,
+  * Removed thumbnailer code and scripts which are unused.
+  * Removed all .po files from the debian packaging.
+  * Removed all icons from the debian packaging.
+  * Added many indexer module API improvements.
+  * Added deep copy function for a GList of strings.
+  * Updated "tracker:unknown" keyword for metadata to "".
+  * Updated the documentation for trackerd/NEWS and README.
+  * Updated build to enable helixbin.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri,  5 Dec 2008 17:00:00 +0000
+
+tracker (0.6.6-23osso1) unstable; urgency=low
+
+  * Fixes: NB#91516, Crashes in tracker-extract for some TIFF files.
+  * Fixes: NB#93085, All the images in the device are not displaying...
+  * Fixes: NB#92788, Tracker not responding to mount signals
+  * Fixed tracker-extract crashing by ignoring rcore files.
+  * Fixed a few non-critical warning in the thumbnailer and libinotify.
+  * Fixed 100% CPU usage from trackerd in monitor code for cache events.
+  * Fixed tracker-applet so it causing the indexer to pause from debugging. 
+  * Removed GnomeVFS dependency.
+  * Added multi-value metadata field extraction using '|' as separator.
+  * Updated default metadata, DC:Subject/DC:Keywords are now multi-valued.
+  * Updated stored procedures to us "AS" keyword for clarity.
+  * Updated the hildon-thumbnail implementation. 
+	
+ -- Martyn Russell <martyn@imendio.com>  Fri, 27 Nov 2008 17:00:00 +0000
+
+tracker (0.6.6-22osso1) unstable; urgency=low
+
+  * Fixes: NB#92708, ISO details are not shown for jpg and png files
+  * Fixes: NB#91842, Metadata duplication when files are moved or modified.
+  * Fixes: NB#90455, Tracker doesn't index Geotags metadata ...
+  * Fixed all 64bit compilation issues.
+  * Fixed compile error with missing semi-colon in HAVE_IMAGEMAGICK code.
+  * Fixed the condition for building with hildon-thumbnail or not.
+  * Fixed build to error not continue with --enable-foo if it doesn't exist.
+  * Added GInterface and GTypeModule support for indexer modules.
+  * Added support for the Volumes database table.
+  * Updated the extractors with several code clean ups.
+  * Removed some unused stored procedures.
+	
+ -- Martyn Russell <martyn@imendio.com>  Fri, 21 Nov 2008 13:00:00 +0000
+
+tracker (0.6.6-21osso1) unstable; urgency=low
+
+  * Fixes: NB#91009, ML-All songs: Audio clips are not alphabeticaly sorted...
+  * Fixes: NB#89160, Child count is wrongly reported in some instances
+  * Fixes: NB#89757, Tracker source displays wrong childcount in the metadata...
+  * Fixes: NB#91621, genre metadata tag  fails to show up
+  * Fixes: NB#92319, Content categorisation fails for attached clip
+  * Fixes: NB#91516, Crashes in tracker-extract for some TIFF files.
+  * Fixes: NB#91488, tracker-extract crashes consistently while using MIDAS
+  * Fixes: NB#91167, Tracker is not restarting automatically  if killed/stopped
+  * Fixes upstream bug #560581, [l10n] Typo in Tracker message
+  * Fixed crash when passing empty GStrv to tracker_keywords_search().
+  * Fixed minor leaks in the MP3 extractor.
+  * Fixed inotify check in configure.ac so it works properly.
+  * Merged libtracker-data branch so now we have a high level DB API.
+  * Added dependency for totem-plparser to project and Maemo build.
+  * Added dependency for libtiff to Maemo build.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri, 14 Nov 2008 13:00:00 +0000
+
+tracker (0.6.6-20osso1) unstable; urgency=low
+
+  * Fixes: NB#91178, tracker-search fails to find the new word ("help")
+  * Included function from glib to create folder with parents.
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Mon, 10 Nov 2008 18:16:00 +0000
+
+tracker (0.6.6-19osso1) unstable; urgency=low
+
+  * Fixes: NB#91560, Disable 'gaim' and 'evolution' modules
+  * Fixes: NB#91655, metadata of Audio files in the memory card ...
+  * Fixes: NB#90138, ... not indexing the metadata of the video files
+  * Fixes: NB#89965, search.Metadata does not work
+  * Fixes: NB#89254, 'Never Played Songs' automatic playlist empty
+  * Improvements to the indexer status and communication with daemon.
+  * Improvements to album art generation.
+  * Stop indexing if battery level is too low.
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Fri, 04 Nov 2008 11:00:00 +0000
+
+tracker (0.6.6-18osso1) unstable; urgency=low
+
+  * Fixes: NB#88140, No sign of indexing the content of directory...
+  * Fixes: NB#91165, Audio Artist and Genre are reported different... 
+  * Fixes: NB#90876, Tracker is not handling Real Audio files properly.
+  * Fixes: NB#88048, Multiple copies of a tag are maintained.
+  * Fixes: NB#90455, Tracker doesn't index Geotags metadata Iptc4xmpCore...
+  * Fixes: NB#90374, Tracker doesn't index XMP XAP:Rating metadata.
+  * Fixed upstream bug #402063, Empty space is not a valid keyword.
+  * Fixed upstream bug #558613, Applet preferences do not show up localized.
+  * Fixed upstream bug #402054, (NB#88048).
+  * Support local album art on removable devices.
+  * Support embedded album art with no type definition if front cover found.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri, 31 Oct 2008 11:00:00 +0000
+
+tracker (0.6.6-17osso1) unstable; urgency=low
+
+  * Fixes: NB#90506, Tracker doesn't index EXIF:DateTimeOriginal metadata
+  * Fixes: NB#87833, trackerd doesnt use tracker-thumbnailers
+  * Fixes: NB#87651, Metadata.Set :  Not able to Set User:Keywords to...
+  * Fixed the Search SQL query method.
+  * Fixed our use of hildon-thumbnail to use URIs not paths.
+  * Fixed make distcheck by adding hal/field-data to tracker-common.h.
+  * Fixed thumbnail generation using URIs not paths for hildon-thumbnail.
+  * Bumped version requirement of hildon-thumbnail to 3.0.7.
+  * Better handling of SIGPIPE.
+  * Better album art integration.
+  * Improvements to the ongoing Tracker FTS work.
+  * Added new metadata properties for videos.
+  * Added support for multiple rows in result sets for Metadata.Get.
+  * Added new test cases for database DBus API.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri, 24 Oct 2008 11:00:00 +0000
+
+tracker (0.6.6-16osso1) unstable; urgency=low
+
+  * Implemented: NR#190979 Added CUD (Clean user databases) script.
+  * Fixes: NB#87525, MTG displays the contents of the local source even...
+  * Fixes: NB#89229, metadata extraction broken in traker source
+  * Fixes: NB#90135, exif and xmp data (in JPEGs) not indexed
+  * Fixes: NB#87894, tracker extraction of Image Height of JPEGs is zero
+  * Fixes: NB#90138, Tracker is not indexing the metadata of the video...
+  * Fixes: NB#90151, tracker depends on identify (imagemagick) which is...
+  * Fixed upstream bug #556196, use sys/inotify.h.
+  * Fixed upstream bug #518265, update FSF address.
+  * Fixed upstream bug #548561, trackerd manpage typo.
+  * Fixed a leak in the indexer when getting thumbnails.
+  * Fixed double free when querying file metadata.
+  * Fixed the ignore pattern *~* to *~ for the files module.
+  * Fixed compiler warnings in libtracker-common and the mp3 extractor.
+  * Fixed the stat() warning we get when files are deleted.
+  * Fixed item removal in the database to do directories recursively.
+  * Fixed a huge leak (~9Mb) per call to tracker_search_get_snipet().
+  * Fixed a leak in the TrackerCrawler on finalize.
+  * Better handling for album art when we don't have GdkPixbuf.
+  * Downgraded GdkPixbuf requirement from 2.16 to 2.12.
+  * Make sure we clean up process contexts in the indexer.
+  * Don't send non-UTF-8 over DBus in the indexer for getting thumbnails.
+  * Improved file monitor events emitted, this is ongoing...
+  * Improved .sql file parser to allow bracketed comments.
+  * Improved TrackerParser to not read out of bounds and work properly.
+  * Removed the unnecessary DISTINCT usage in stored SQL procedures.
+  * Removed unused stored procedures we load on startup, now 50% less.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri, 17 Oct 2008 13:30:00 +0000
+
+tracker (0.6.6-15osso2) unstable; urgency=low
+
+  * Enable GdkPixbuf for album art since we have GTK+ >= 2.12.x.
+
+ -- Martyn Russell <martyn@imendio.com>  Mon, 13 Oct 2008 09:30:00 +0000
+
+tracker (0.6.6-15osso1) unstable; urgency=low
+
+  * Fixes: NB#89466, trackerd crash when using metadata.GetSum
+  * Fixes: NB#88880, Unable to extract metadata of music files which have...
+  * Fixes: NB#88769, Inaccurate number of items indexed
+  * Fixed all tracker-utils to use setlocale(LC_ALL, "").
+  * Added GOption support and --help to tracker-extract.
+  * Added a direct-sql DBus API to run SQL statements directly on the DBs.
+  * Added 10 min timeout based SQLite connections for direct-sql feature.
+  * Added support for SQLite's shared cache feature for trackerd.
+  * Added more documentation for writing an indexer plugin.
+  * Make the tracker package depend on SQLite >= 3.5 (was 3.4).
+  * Make the tracker-indexer module library compile out-of-tree.
+  * Reworked TrackerPreferences to use the TrackerConfig API.
+  * Removed TrackerConfiguration in favor of TrackerConfig.
+  * Don't warn in tracker-extract for g_strstrip() on NULL string.
+  * Don't warn about GFileInfo unref on NULL object.
+  * Don't link with GdkPixbuf unless we have support it in extractors.
+  * Don't double free memory owned by TrackerOntology.
+  * Ran valgrind and plugged several leaks in Tracker{QueryTree|Metadata|DB}.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri, 10 Oct 2008 12:30:00 +0000
+
+tracker (0.6.6-14osso1) unstable; urgency=low
+
+  * debian/tracker.sh: Fixed pidfile dir and start-stop-daemon-path
+
+ -- Gabriel Schulhof <gabriel.schulhof@nokia.com>  Thu,  9 Oct 2008 14:33:51 +0300
+
+tracker (0.6.6-13osso1) unstable; urgency=low
+
+  * Fixes: NB#87800, Tracker doesnt start after booting
+  * Fixed libtracker-common and tracker-indexer-module to be usable with pkgconfig.
+  * Added support for play lists.
+  * Added design documentation for tracker-indexer.
+  * Added a dummy extractor as an example for 3rd party developers.
+
+ -- Martyn Russell <martyn@imendio.com>  Tue,  7 Oct 2008 14:30:00 +0000
+
+tracker (0.6.6-12osso2) unstable; urgency=low
+
+  * Fixed build to not require gtk-doc-tools.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri,  3 Oct 2008 14:30:00 +0000
+
+tracker (0.6.6-12osso1) unstable; urgency=low
+
+  * Fixed MMC indexing, devices were found but not traversed.
+  * Fixed inotify move events deleting items in DB before moving them.
+  * Fixed debugging so it doesn't look like we delete files with no metadata.
+  * Fixed files module to NOT re-check against exclude patterns.
+  * Fixed applications module to explain why we return no metadata.
+  * Fixed a bug that forced a reindex on every startup.
+  * Fixed multipart message handling for Evolutions IMAP using GMime.
+  * Fixed evolution module to try converting contents if not valid UTF-8.
+  * Added tracker-info and DBus API to get all metadata about a file.
+  * Added multi-valued field support for RDF queries (over DBus too).
+  * Added GetUniqueValuesWithCountAndSum API back.
+  * Added an MP3 album art extractor.
+  * Added documentation for trackerd design and the libraries using gtk-doc.
+  * Improved service/metadata loading to scan dir and not be a hardcoded list.
+  * Cleaned up unused DB functions.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri,  3 Oct 2008 13:30:00 +0000
+
+tracker (0.6.6-11osso1) unstable; urgency=low
+
+  * Old $prefix files now removed for TRUNK to indexer-split svn update.
+  * Tracker verbosity is now 0 not 3 by default.
+  * Fixed make distcheck and make check failures.
+  * Fixed indexer so that the score is positive when we add words to index.
+  * Fixed the UID=NULL error we get for indexing email.
+  * Fixed breakage on 64 bit platforms in evolution backend.
+  * Fixed a potential memory leak in the indexer metadata insertion.
+  * Added missing "Applications" category.
+  * Added missing description for File:Language.
+  * Added database version check for TRUNK to indexer-split svn update.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri, 25 Sep 2008 15:30:00 +0000
+
+tracker (0.6.6-10osso1) unstable; urgency=low
+
+  * Fixed a serious speed impairment in indexer.
+  * Fixed a crash in indexer where we didn't clean up IO channel watches.
+  * Fixed warnings generated by the PNG extractor passing NULL dates back.
+  * Fixed G_VALUE_HOLDS_INT (value) console warning.
+  * Fixed spamming warnings when indexing email. They were normal messages.
+  * Fixed warning when XDG_DATA_HOME env var is not set.
+  * Fixed the MMCs not being crawled.
+  * No longer collating static ontology service/field data for speed.
+  * Added support back for 3 legacy config options and a migration path.
+  * Added initial integration with new DBus based thumbnail service. 
+  * Removed unused code in indexer and ontology modules.
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 16 Sep 2008 17:00:00 +0000
+
+tracker (0.6.6-9osso1) unstable; urgency=low
+
+  * Fixes: NB#88107, moving file in-out of the watch directory, has...
+  * Fixes: NB#88140, No sign of indexing the content of directory moved-in
+  * Fixes: NB#88292, Index is not flushed after FINISHED signal emitted
+  * Fixes: NB#88293, Don't index directory content if mtime is indifferent
+  * Fixed XDG_DATA_DIR issues, must be writable.
+  * Fixed RDF OR operator issues.
+  * Fixed audio extractors to check for a minimum amount of information.
+  * Fixed image extractors to use native data over EXIF/XMP data.
+  * Fixed issues with date handling in metadata.
+  * Fixed MP3 extractor to handle 'audio/x-mp3' metadata type.
+  * Fixed JPEG extractor memory leaks.
+  * Fixed the indexer by checking dates given by extractors.
+  * Fixed a crash in result sets.
+  * Fixed tracker-extract to use libtracker-common instead of dup funcs.
+  * Fixed trackerd init script to start in background so install can finish.
+  * Temporarily disabled thumbnail extraction.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri, 12 Sep 2008 11:25:00 +0000
+
+tracker (0.6.6-8osso1) unstable; urgency=low
+
+  * Fixes: NB#87664, GetRegisteredTypes works only for servicetype = * and...
+  * Fixes: NB#87830, metadata.Get gets previous values
+  * Fixes: NB#87834, tracker-thumbnailer crashes if insufficient command-line...
+  * Fixes: NB#87647, trackerd crashes if more than one value per key is...
+  * Fixes: NB#87833, trackerd doesnt use tracker-thumbnailers
+  * Fixes: NB#88145, Get file content in indexer should be efficient...
+  * Fixes: NB#88146, Internal libraries should be dynamically linked
+  * Fixes: NB#88148, Indexer does nothing with files sent to it after an...
+
+ -- Martyn Russell <martyn@imendio.com>  Fri,  5 Sep 2008 12:25:00 +0000
+
+tracker (0.6.6-7osso1) unstable; urgency=low
+
+  * Initscript fixes
+
+ -- Lauri Jakku <ext-lauri.jakku@nokia.com>  Thu,  4 Sep 2008 15:09:09 +0300
+
+tracker (0.6.6-6osso1) unstable; urgency=low
+
+  * Fix PS external extractor module.
+  * Make GStreamer external extractor module handle images.
+  * Handle normalized URIs.
+  * Make text extraction asynchronous.
+  * Added a stats-changed signal.
+  * Make flush to index asynchronous and interruptable.
+  * Report correctly that the indexer has finished doing its work.
+  * Make the indexer wait for events more time.
+  * Implemented: NR#190967, NR#190657, NR#190658, NR#190659, NR#192028, NR#192027, NR#190048, NR#190016
+  * Fixes: NB#87662 Metadata.GetTypeDetails reports false types
+  * Fixes: NB#87646 trackerd crashes when using GetMetadataForFilesInFolder
+
+ -- Carlos Garnacho <carlos@imendio.com>  Fri, 26 Aug 2008 19:06:00 +0000
+
+tracker (0.6.6-5osso1) unstable; urgency=low
+
+  * Split the index.db QDBM database into 2 for emails and files.
+  * Do not flush the index on pause.
+  * Fixed a nasty double free in the text parser.
+  * Fixed index corruption by not reopening the index if it was closed for flushing.
+  * Fixed crash by checking that rows exist before reading them for result sets.
+  * Fixed crash with strcmp and NULL strings in ontology hash tables.
+  * Fixed the "finish" signal not being emitted from the indexer->daemon.
+  * Fixed index and string type meta-data handling in queries.
+  * Removed imported libxdgmime, instead use GIO's API.
+  * Improve metadata merging for files which are moved.
+  * Added more meta-data types for images and folders for ontology.
+  * Added a "run-forever" feature to the indexer.
+  * Improved file MOVE events by dealing with source/targets we don't monitor.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri, 22 Aug 2008 16:37:00 +0000
+
+tracker (0.6.6-4osso1) unstable; urgency=low
+
+  * Cleaned up the configure script.
+  * Removed the --enable-debug-tools switch for configure.
+  * Added more checks to the --enable-warnings switch to catch unused code.
+  * Moved a lot of data for the build into data/.
+  * Check database items for already indexed files using mtime too. 
+  * Don't create a new process for every extract.
+  * Don't flush the index when pausing it.
+  * Don't flush if there are items already in the cache.
+  * Fixed the NoWatchDirectoryRoots config option being ignored.
+  * Fixed the WatchDirectoryRoots config option so it crawls files too.
+  * Fixed the throttle in the crawler so the time is reduced significantly.
+  * Fixed the org.freedesktop.Tracker.Files.{Create|Delete} interfaces.
+  * Fixed the limit and offset in unique value queries.
+  * Fixed many places where uninitialised variables were used causing crashes.
+  * Fixed the status signal index on battery information.
+  * Minor bug fixes to the RDF queries.
+  * Ignore "Sent" folders for email.
+  * Added sorting fields to RDF queries and improved error reporting.
+  * Added MOVE support for file monitors using an imported version of libinotify.
+  * Added a minimum throttle of 5 by default instead of returning on 0.
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 20 Aug 2008 19:22:00 +0000
+
+tracker (0.6.6-3osso1) unstable; urgency=low
+
+  * Pause the indexer properly.
+  * Pause the indexer when we have IO changes (monitor events).
+  * Shutdown the indexer when the daemon is shutdown.
+  * Index speed improvements.
+  * Utility improvements (print help if no args supplied).
+  * Fixed some nasty memory leaks in the indexer using valgrind.
+  * Only read file content up to maximum size we index not the whole file.
+  * Added thumbnail scripts for images.
+  * Added extractors for JPEG and TIFF.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri, 15 Aug 2008 12:00:00 +0000
+
+tracker (0.6.6-1osso2) unstable; urgency=low
+
+  * First packages for the Maemo version of the upstream indexer-split branch.
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 13 Aug 2008 09:53:00 +0000
+
+tracker (0.6.6-1) unstable; urgency=low
+
+  * Added patches for maemo plattform and compilation
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Thu, 22 May 2008 20:05:00 +0000
+
+	
+tracker (0.6.4-1) unstable; urgency=low
+
+  * Initial release.
+
+ -- Martyn Russell <martyn@imendio.com>  Fri,  9 Jan 2008 12:00:00 +0000

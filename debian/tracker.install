@@ -1,0 +1,20 @@
+debian/tmp/usr/share/dbus-1/services/
+debian/tmp/usr/share/tracker/*.xml
+debian/tmp/usr/share/tracker/*.sql
+debian/tmp/usr/share/tracker/modules/
+debian/tmp/usr/share/tracker/services/
+debian/tmp/usr/lib/tracker/*.so.*
+debian/tmp/usr/lib/tracker/*.so
+debian/tmp/usr/lib/tracker/trackerd
+debian/tmp/usr/lib/tracker/tracker-indexer
+debian/tmp/usr/lib/tracker/tracker-extract
+debian/tmp/usr/lib/tracker/extract-modules/*.so
+debian/tmp/usr/lib/tracker/extract-modules/*.so*
+debian/tmp/usr/lib/tracker/indexer-modules/*.so
+debian/tmp/usr/lib/tracker/indexer-modules/*.so*
+debian/tmp/etc/xdg/autostart/trackerd.desktop
+debian/tmp/etc/xdg/autostart/trackerd.desktop usr/share/autostart/
+debian/tracker.sh etc/osso-af-init
+debian/tracker-cud.sh etc/osso-cud-scripts
+debian/tracker-rfs.sh etc/osso-rfs-scripts
+debian/31tracker etc/X11/Xsession.post/

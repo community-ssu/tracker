@@ -1,0 +1,73 @@
+Source: tracker
+Section: utils
+Priority: optional
+Maintainer: Urho Konttori <urho.konttori@nokia.com>
+XS-Python-Version: all
+Build-Depends: cdbs, debhelper (>= 5.0.0), autotools-dev,
+  libxml-parser-perl, libglib2.0-dev (>= 2.16.0), libpango1.0-dev
+  (>=1.0.0), libdbus-1-dev (>= 0.60), libdbus-glib-1-dev (>= 0.60),
+  libgmime-2.0-2-dev (>= 2.2.0), libsqlite3-dev (>= 3.5),
+  libosso-gsf-1-dev (>= 1.11), libexif-dev (>= 0.6), libpng12-dev
+  (>=1.2), libgtk2.0-dev (>= 2.8.0), zlib1g-dev, intltool, libhal-dev
+  (>= 0.5.10), libhal-storage-dev (>= 0.5.10), gtk-doc-tools,
+  libhildon-thumbnail-dev (>= 3.0.10), libexempi-dev, libjpeg62-dev,
+  libtiff4-dev (>= 3.8.2), libxml2-dev, libpoppler-glib-dev,
+  libgstreamer0.10-dev (>= 0.10.20), libgstreamer-plugins-base0.10-dev
+  (>= 0.10.20), libtotem-plparser-dev, libiptcdata0-dev, mce-dev
+Standards-Version: 3.7.2 
+
+Package: tracker
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, shared-mime-info, dbus,
+  libhal1, libhal-storage1, hildon-thumbnail (>= 3.0.10), libexempi3,
+  libjpeg62, libgstreamer0.10-0, libgstreamer-plugins-base0.10-0,
+  libtiff4 (>= 3.8.2), libxml2, libpoppler0c2-glib,
+  libtotem-plparser12, libiptcdata0, mce
+Recommends: tracker-utils, unzip, wv, poppler-utils | xpdf-utils,
+  xsltproc, w3m, untex, o3read
+Suggests: evince, djvulibre-bin, gnumeric
+Description: All-in-one indexer, search tool and metadata database.
+
+Package: tracker-dbg
+Architecture: any
+Priority: extra
+Depends: tracker (= ${binary:Version})
+Description: All-in-one indexer, search tool and metadata database.
+
+Package: libtrackerclient0
+Architecture: any
+Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Tracker client side library to access indexed data.
+
+Package: libtrackerclient0-dbg
+Architecture: any
+Priority: extra
+Depends: libtrackerclient0 (= ${binary:Version})
+Description: Tracker client side library to access indexed data.
+
+Package: libtrackerclient0-dev
+Architecture: any
+Section: libdevel
+Depends: libtrackerclient0 (= ${binary:Version}), libglib2.0-dev,
+  libdbus-1-dev, libdbus-glib-1-dev 
+Description: Tracker client side library to access indexed data.
+
+Package: tracker-utils
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, tracker (= ${binary:Version})
+Description: Tracker command line applications to lookup data
+ Included utilities for Tracker:
+  * tracker-files:       Get files based service type or mime type.
+  * tracker-meta-folder: Get metadata for all files in a folder.
+  * tracker-query:       Run an RDF query against the databases.
+  * tracker-search:      Perform a google-like search on all data.
+  * tracker-stats:       Get statistics on how many items are indexed.
+  * tracker-status:      Get the current state of the daemon (idle/indexing/etc).
+  * tracker-tag:         Add, remove, list tags for specific files.
+
+Package: tracker-utils-dbg
+Architecture: any
+Priority: extra
+Depends: tracker-utils (= ${binary:Version})
+Description: Tracker command line applications to lookup data

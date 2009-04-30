@@ -1,0 +1,24 @@
+Index: data/modules/gaim-conversations.module
+===================================================================
+--- data/modules/gaim-conversations.module	(revisión: 31609)
++++ data/modules/gaim-conversations.module	(copia de trabajo)
+@@ -1,6 +1,6 @@
+ [General]
+ Description=GAIM Conversations
+-Enabled=true
++Enabled=false
+ 
+ [Monitors]
+ Directories=
+Index: data/modules/evolution.module
+===================================================================
+--- data/modules/evolution.module	(revisión: 31609)
++++ data/modules/evolution.module	(copia de trabajo)
+@@ -1,6 +1,6 @@
+ [General]
+ Description=Evolution
+-Enabled=true
++Enabled=false
+ 
+ [Monitors]
+ Directories=

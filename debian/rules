@@ -1,0 +1,82 @@
+#!/usr/bin/make -f
+
+#export DH_VERBOSE=1
+  
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/autotools.mk
+include /usr/share/cdbs/1/class/gnome.mk
+include /usr/share/cdbs/1/rules/simple-patchsys.mk
+include /usr/share/cdbs/1/rules/utils.mk
+
+# Skip .svn dirs if any in the build directories
+DEB_DH_ALWAYS_EXCLUDE := .svn
+DEB_DH_STRIP_ARGS := --dbg-package=tracker --dbg-package=libtrackerclient --dbg-package=tracker-utils
+
+DEB_CONFIGURE_EXTRA_FLAGS := 			\
+	--with-compile-warnings=no		\
+	--disable-static			\
+	--disable-deskbar-applet 		\
+	--disable-tracker-applet 		\
+	--disable-tracker-preferences 		\
+	--disable-tracker-search-tool 		\
+	--disable-libtrackergtk 		\
+	--disable-unit-tests 			\
+	--disable-imagemagick			\
+	--disable-unac 				\
+	--enable-video-extractor=gstreamer 	\
+	--disable-gstreamer-helix		\
+	--enable-external-sqlite 		\
+	--enable-poppler-glib			\
+	--enable-libexif 			\
+	--disable-libgsf			\
+	--enable-libtiff			\
+	--enable-libjpeg			\
+	--enable-exempi				\
+	--enable-playlist			\
+	--enable-hildon-thumbnail		\
+	--enable-unzip-ps-gz-files=no
+
+DEB_CONFIGURE_SCRIPT_ENV += LDFLAGS="-Wl,--as-needed"
+
+# Enforce tight shlibs dependencies
+# DEB_DH_MAKESHLIBS_ARGS_ALL := -V
+
+DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+
+ifeq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
+  confflags += --build $(DEB_HOST_GNU_TYPE)
+else
+  confflags += --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
+endif
+
+CFLAGS += -g
+
+# Use soft-float and thumb mode if it enabled.
+ifneq (,$(findstring thumb,$(DEB_BUILD_OPTIONS)))
+	CFLAGS += -mthumb
+endif
+
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+        INSTALL_PROGRAM += -s
+endif
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+	CFLAGS += -O0
+else
+	CFLAGS += -O2
+endif
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+	INSTALL_PROGRAM += -s
+endif
+
+post-patches:: debian/stamp-autothings-update
+debian/stamp-autothings-update:
+	# Set ACLOCAL_FLAGS so that libtool.m4 is picked up in scratchbox 1.0.x + sardine
+	NOCONFIGURE=1 ACLOCAL_FLAGS="-I /targets/links/arch_tools/share/aclocal" ./autogen.sh $(DEB_CONFIGURE_EXTRA_FLAGS)
+	# Can add things here that need to be ran after autogen.sh
+	touch $@
+
+clean::
+	rm -f debian/stamp-autothings-update
+
