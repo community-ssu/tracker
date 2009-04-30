@@ -1,0 +1,66 @@
+diff --git a/src/libtracker-common/tracker-config.c b/src/libtracker-common/tracker-config.c
+index 6dcfd54..4345da2 100644
+--- a/src/libtracker-common/tracker-config.c
++++ b/src/libtracker-common/tracker-config.c
+@@ -73,7 +73,7 @@
+ 
+ /* Default values */
+ #define DEFAULT_VERBOSITY			 0
+-#define DEFAULT_INITIAL_SLEEP			 45	  /* 0->1000 */
++#define DEFAULT_INITIAL_SLEEP			 7	  /* 0->1000 */
+ #define DEFAULT_LOW_MEMORY_MODE			 FALSE
+ #define DEFAULT_NFS_LOCKING			 FALSE
+ #define DEFAULT_ENABLE_WATCHES			 TRUE
+@@ -85,15 +85,15 @@
+ #define DEFAULT_MIN_WORD_LENGTH			 3	  /* 0->30 */
+ #define DEFAULT_MAX_WORD_LENGTH			 30	  /* 0->200 */
+ #define DEFAULT_ENABLE_STEMMER			 TRUE
+-#define DEFAULT_DISABLE_INDEXING_ON_BATTERY	 TRUE
++#define DEFAULT_DISABLE_INDEXING_ON_BATTERY	 FALSE
+ #define DEFAULT_DISABLE_INDEXING_ON_BATTERY_INIT FALSE
+ #define DEFAULT_INDEX_MOUNTED_DIRECTORIES	 TRUE
+ #define DEFAULT_INDEX_REMOVABLE_DEVICES		 TRUE
+ #define DEFAULT_LOW_DISK_SPACE_LIMIT		 1	  /* 0->100 / -1 */
+ #define DEFAULT_MAX_TEXT_TO_INDEX		 1048576  /* Bytes */
+ #define DEFAULT_MAX_WORDS_TO_INDEX		 10000
+-#define DEFAULT_MAX_BUCKET_COUNT		 524288
+-#define DEFAULT_MIN_BUCKET_COUNT		 65536
++#define DEFAULT_MAX_BUCKET_COUNT		 65535
++#define DEFAULT_MIN_BUCKET_COUNT		 32768
+ 
+ typedef struct _TrackerConfigPrivate TrackerConfigPrivate;
+ 
+@@ -759,8 +759,22 @@ config_create_with_defaults (GKeyFile *key_file,
+ 			     gboolean  overwrite)
+ {
+ 	gchar	     *language;
+-	const gchar  *watch_directory_roots[2] = { NULL, NULL };
+ 	const gchar  *empty_string_list[] = { NULL };
++	const gchar  *no_watch_directory_roots[4] = {  
++		"$HOME/MyDocs/core-dumps/",
++		"$HOME/MyDocs/cities/", 
++		"$HOME/MyDocs/.sounds/Ringtones/", 
++		NULL
++	};
++	const gchar  *watch_directory_roots[7] = {  
++		"$HOME/MyDocs/",
++		"$HOME/MyDocs/.sounds/", 
++		"$HOME/MyDocs/.documents/", 
++		"$HOME/MyDocs/.videos/", 
++		"$HOME/MyDocs/.images/", 
++		"$HOME/MyDocs/.camera/",
++		NULL 
++	};
+ 
+ 	/* Get default values */
+ 	language = tracker_language_get_default_code ();
+@@ -822,7 +836,8 @@ config_create_with_defaults (GKeyFile *key_file,
+ 
+ 	if (overwrite || !g_key_file_has_key (key_file, GROUP_WATCHES, KEY_NO_WATCH_DIRECTORY_ROOTS, NULL)) {
+ 		g_key_file_set_string_list (key_file, GROUP_WATCHES, KEY_NO_WATCH_DIRECTORY_ROOTS,
+-					    empty_string_list, 0);
++					    no_watch_directory_roots, 
++					    g_strv_length ((gchar**) no_watch_directory_roots));
+ 		g_key_file_set_comment (key_file, GROUP_WATCHES, KEY_NO_WATCH_DIRECTORY_ROOTS,
+ 					" List of directory roots NOT to index and NOT to watch (separator=;)",
+ 					NULL);

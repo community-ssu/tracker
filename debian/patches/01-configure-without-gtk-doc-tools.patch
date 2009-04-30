@@ -1,0 +1,46 @@
+diff --git a/configure.ac b/configure.ac
+index 4c5c5fb..7fb6044 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1140,10 +1140,7 @@ AM_CONDITIONAL(ENABLE_SQLITE_FTS, test "$enable_sqlite_fts" = "yes")
+ # Checks for gtk-doc and docbook-tools
+ ####################################################################
+ 
+-GTK_DOC_CHECK([1.8])
+-
+-AC_CHECK_PROG(DB2HTML, db2html, true, false)
+-AM_CONDITIONAL(HAVE_DOCBOOK, $DB2HTML)
++AM_CONDITIONAL(HAVE_DOCBOOK, false)
+ 
+ ##################################################################
+ # Check for older tracker project files which can cause problems
+diff --git a/docs/reference/libtracker-common/Makefile.am b/docs/reference/libtracker-common/Makefile.am
+index 12c22b8..aa292cf 100644
+--- a/docs/reference/libtracker-common/Makefile.am
++++ b/docs/reference/libtracker-common/Makefile.am
+@@ -62,7 +62,9 @@ HTML_IMAGES =
+ # Extra options to supply to gtkdoc-fixref
+ FIXXREF_OPTIONS=
+ 
+-include $(top_srcdir)/gtk-doc.make
++# Commented out for Maemo built to work.
++# include $(top_srcdir)/gtk-doc.make
++EXTRA_DIST =
+ 
+ # Other files to distribute
+ EXTRA_DIST += version.xml.in
+diff --git a/docs/reference/libtracker-module/Makefile.am b/docs/reference/libtracker-module/Makefile.am
+index a72db8b..e6c2ec4 100644
+--- a/docs/reference/libtracker-module/Makefile.am
++++ b/docs/reference/libtracker-module/Makefile.am
+@@ -82,7 +82,9 @@ HTML_IMAGES =
+ # Extra options to supply to gtkdoc-fixref
+ FIXXREF_OPTIONS=
+ 
+-include $(top_srcdir)/gtk-doc.make
++# Commented out for Maemo built to work.
++#include $(top_srcdir)/gtk-doc.make
++EXTRA_DIST =
+ 
+ # Other files to distribute
+ EXTRA_DIST += version.xml.in
