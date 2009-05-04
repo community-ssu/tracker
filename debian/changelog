@@ -7,6 +7,8 @@ tracker (0.6.94-1maemo1) stable; urgency=low
   * Fixes: GB#580908, [PATCH] Make configure error on missing hal and ...
   * Fixes: GB#580905, [PATCH] Clean up help messages in configure
   * Fixes: GB#575130, Remove deprecated GTK+ symbols
+  * Fixes tracker_hal_path_is_on_removable_device() performance.
+  * Fixes need for sqlite_load_extension() without FTS support enabled.
   * Fixes several memory leaks
   * Fixes missing break causing WHERE property to return ORDER property
   * Added test cases for TrackerDataMetadata, TrackerThumbnailer, etc
