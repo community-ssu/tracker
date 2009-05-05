@@ -4,7 +4,7 @@ tracker (0.6.94-2maemo1) stable; urgency=low
   * Fixes indexer transactions, start after data extraction, now 2x faster
   * Fixes indexer to perform binary searches on cached words.
 	
- -- Martyn Russell <martyn@imendio.com>  Fri,  1 May 2009 17:00:00 +0000
+ -- Martyn Russell <martyn@imendio.com>  Tue,  5 May 2009 17:00:00 +0000
 	
 tracker (0.6.94-1maemo1) stable; urgency=low
 
