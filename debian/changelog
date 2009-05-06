@@ -1,3 +1,16 @@
+tracker (0.6.94-3maemo1) stable; urgency=low
+
+  * Fixes binary search index size error, assumed 0 to array->len
+  * Fixes binary search index use gint64 not guint for array index
+  * Fixes indexer invalid writes in state_to_string() if string is empty
+  * Fixes indexer crash, by setting ALL struct members in unindex_metadata
+  * Fixes turtle memory leaks and unnecessary allocations and adds checks
+  * Fixes trackerd disk_space_check_stop() critical warning on shutdown
+  * Added more generic DBus API for performing aggregates on unique values
+  * Removed **** from low disk space messages in log
+	
+ -- Martyn Russell <martyn@imendio.com>  Wed,  6 May 2009 15:00:00 +0000
+	
 tracker (0.6.94-2maemo1) stable; urgency=low
 
   * Fixes: NB#114354, trackerd polls
