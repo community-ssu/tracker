@@ -1,0 +1,24 @@
+diff --git a/src/libtracker-db/tracker-db-index.c b/src/libtracker-db/tracker-db-index.c
+index 42b5b92..0d136cc 100644
+--- a/src/libtracker-db/tracker-db-index.c
++++ b/src/libtracker-db/tracker-db-index.c
+@@ -1131,6 +1131,9 @@ tracker_db_index_get_suggestion (TrackerDBIndex *indez,
+ 	gint		     hits;
+ 	GTimeVal	     start, current;
+ 
++	/* Disable QDBM operations */
++	return NULL;
++
+ 	g_return_val_if_fail (TRACKER_IS_DB_INDEX (indez), NULL);
+ 	g_return_val_if_fail (term != NULL, NULL);
+ 	g_return_val_if_fail (maxdist >= 0, NULL);
+@@ -1240,6 +1243,9 @@ tracker_db_index_add_word (TrackerDBIndex *indez,
+ 	GArray		      *array;
+ 	guint                  i;
+ 
++	/* Disable QDBM operations */
++	return;
++
+ 	g_return_if_fail (TRACKER_IS_DB_INDEX (indez));
+ 	g_return_if_fail (word != NULL);
+ 
