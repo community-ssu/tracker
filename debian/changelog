@@ -1,3 +1,16 @@
+tracker (0.6.94-4maemo1) stable; urgency=low
+
+  * Fixes: NB#100123, Image:Date is empty for some of the images
+  * Fixes: NB#115184, tracker-unique crashed
+  * Fixes albumart heuristic scanner
+  * Fixes tracker-query to allow queries without an rdf-file
+  * Improves MP3 extractor checks for files before getting metadata
+  * Reverted QDBM binary search work after several negative reports
+  * Disable QDBM operations with patch 09
+  * Disable FTS support, so we don't open files and extract content
+
+ -- Martyn Russell <martyn@imendio.com>  Thu,  7 May 2009 17:30:00 +0000
+
 tracker (0.6.94-3maemo1) stable; urgency=low
 
   * Fixes binary search index size error, assumed 0 to array->len
