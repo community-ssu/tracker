@@ -1,3 +1,11 @@
+tracker (0.6.94-5maemo1) stable; urgency=low
+
+  * Fixes: NB#112632, Files seem to go missing from database
+  * Fixes: NB#113903, tracker-extract crashes on mp3 files with a bad...
+  * Fixes: NB#110221, ML: Album Art is not displaying in All Album...
+
+ -- Martyn Russell <martyn@imendio.com>  Fri,  8 May 2009 17:30:00 +0000
+
 tracker (0.6.94-4maemo1) stable; urgency=low
 
   * Fixes: NB#100123, Image:Date is empty for some of the images
