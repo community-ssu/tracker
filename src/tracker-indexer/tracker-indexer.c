@@ -1266,10 +1266,15 @@ unindex_metadata (TrackerIndexer      *indexer,
 		  TrackerDataMetadata *metadata)
 {
 	MetadataForeachData data;
+	gint service_id;
+
+	service_id = tracker_service_get_id (service);
 
 	data.language = indexer->private->language;
 	data.config = indexer->private->config;
+	data.service_id = service_id;
 	data.service = service;
+	data.index = tracker_db_index_manager_get_index_by_service_id (service_id);
 	data.id = id;
 	data.add = FALSE;
 
@@ -2975,6 +2980,7 @@ static gchar *
 state_to_string (TrackerIndexerState state)
 {
 	GString *s;
+	gchar   *str, *p;
 
 	s = g_string_new ("");
 	
@@ -2991,9 +2997,19 @@ state_to_string (TrackerIndexerState state)
 		s = g_string_append (s, "CLEANUP | ");
 	}
 
-	s->str[s->len - 3] = '\0';
+	str = g_string_free (s, FALSE);
 
-	return g_string_free (s, FALSE);
+	/* Remove last separator */
+	p = g_utf8_strrchr (str, -1, '|');
+	if (p) {
+		/* Go back one to the space before '|' */
+		p--;
+		
+		/* NULL terminate here */
+		*p = '\0';
+	}
+
+	return str;
 }
 
 static void

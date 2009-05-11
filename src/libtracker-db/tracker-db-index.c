@@ -1238,8 +1238,8 @@ tracker_db_index_add_word (TrackerDBIndex *indez,
 	TrackerDBIndexItem     elem;
 	TrackerDBIndexItem    *current;
 	GArray		      *array;
-	guint                  left, right, center;
-	guint		       new_score;
+	gint64                 left, right, center;
+	gint64		       new_score;
 
 	g_return_if_fail (TRACKER_IS_DB_INDEX (indez));
 	g_return_if_fail (word != NULL);
@@ -1270,11 +1270,15 @@ tracker_db_index_add_word (TrackerDBIndex *indez,
 
 	/* It is not the first time we find the word, perform binary search */
 	left = 0;
-	right = array->len;
+	right = array->len - 1;
 	center = (right - left) / 2;
 
 	do {
 		center += left;
+
+		/* For testing */
+		/* g_return_if_fail (center < array->len); */
+	
 		current = &g_array_index (array, TrackerDBIndexItem, center);
 
 		if (service_id > current->id) {

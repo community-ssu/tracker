@@ -95,7 +95,9 @@ private_free (gpointer data)
 
 	private = data;
 
-	disk_space_check_stop ();
+	if (private->disk_space_check_id) {
+		g_source_remove (private->disk_space_check_id);
+	}
 
 	g_signal_handlers_disconnect_by_func (private->config,
 					      low_disk_space_limit_cb,
@@ -302,7 +304,7 @@ disk_space_check (void)
 	}
 
 	if (((long long) st.f_bavail * 100 / st.f_blocks) <= limit) {
-		g_message ("**** Disk space is low");
+		g_message ("Disk space is low");
 		return TRUE;
 	}
 
@@ -337,7 +339,7 @@ disk_space_check_start (void)
 	limit = tracker_config_get_low_disk_space_limit (private->config);
 
 	if (limit != -1) {
-		g_message ("**** Starting disk space check for every %d seconds",
+		g_message ("Starting disk space check for every %d seconds",
 			   DISK_SPACE_CHECK_FREQUENCY);
 		private->disk_space_check_id = 
 			g_timeout_add_seconds (DISK_SPACE_CHECK_FREQUENCY,
@@ -349,7 +351,7 @@ disk_space_check_start (void)
 		 */
 		disk_space_check_cb (NULL);
 	} else {
-		g_message ("**** Not setting disk space, configuration is set to -1 (disabled)");
+		g_message ("Not setting disk space, configuration is set to -1 (disabled)");
 	}
 }
 
@@ -362,7 +364,7 @@ disk_space_check_stop (void)
 	g_return_if_fail (private != NULL);
 
 	if (private->disk_space_check_id) {
-		g_message ("**** Stopping disk space check");
+		g_message ("Stopping disk space check");
 		g_source_remove (private->disk_space_check_id);
 		private->disk_space_check_id = 0;
 	}
@@ -783,7 +785,7 @@ tracker_status_set (TrackerStatus new_status)
 		     private->is_paused_for_space ||
 		     private->is_paused_for_dbus ||
 		     private->is_paused_for_unknown)) {
-			g_message ("**** Attempt to set state to IDLE with pause conditions, changing...");
+			g_message ("Attempt to set state to IDLE with pause conditions, changing...");
 			tracker_status_set (TRACKER_STATUS_PAUSED);
 			return;
 		}
