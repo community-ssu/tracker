@@ -1,3 +1,10 @@
+tracker (0.6.94-6maemo1) stable; urgency=low
+
+  * Fixes: NB#109892,
+  * Fixes the way we get volume IDs for a given path
+
+ -- Martyn Russell <martyn@imendio.com>  Mon, 11 May 2009 17:30:00 +0000
+
 tracker (0.6.94-5maemo1) stable; urgency=low
 
   * Fixes: NB#112632, Files seem to go missing from database
