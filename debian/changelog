@@ -1,3 +1,9 @@
+tracker (0.6.94-7maemo1) stable; urgency=low
+
+  * Set volume states before enabling DBus interfaces, shutdown on error
+
+ -- Martyn Russell <martyn@imendio.com>  Tue, 12 May 2009 17:30:00 +0000
+
 tracker (0.6.94-6maemo1) stable; urgency=low
 
   * Fixes: NB#109892,
