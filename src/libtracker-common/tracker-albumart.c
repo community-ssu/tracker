@@ -400,13 +400,14 @@ tracker_albumart_heuristic (const gchar *artist_,
 			tracker_albumart_get_path (artist, album, 
 						   "album", NULL, 
 						   &target, NULL);
-			
-			file = g_file_new_for_path (target);
-			
-			g_file_copy_async (local_file, file, 0, 0, 
-					   NULL, NULL, NULL, NULL, NULL);
-			
-			g_object_unref (file);
+			if (target) {
+				file = g_file_new_for_path (target);
+				
+				g_file_copy_async (local_file, file, 0, 0, 
+						   NULL, NULL, NULL, NULL, NULL);
+				
+				g_object_unref (file);
+			}
 			g_object_unref (local_file);
 			
 			*copied = TRUE;
@@ -440,7 +441,13 @@ tracker_albumart_heuristic (const gchar *artist_,
 	retval = FALSE;
 	file = NULL;
 
-	g_stat (dirname, &st);
+	if (g_stat (dirname, &st) == -1) {
+		g_warning ("Could not g_stat() directory:'%s' for albumart heuristic",
+			   dirname);
+		g_free (dirname);
+		return FALSE;
+	}
+
 	count = st.st_nlink;
 	
 	if (tracks_str) {
@@ -472,32 +479,34 @@ tracker_albumart_heuristic (const gchar *artist_,
 				
 				if (g_str_has_suffix (name, "jpeg") || 
 				    g_str_has_suffix (name, "jpg")) {
-					GFile *file_found;
-					
 					if (!target) {
 						tracker_albumart_get_path (artist, album, 
 									   "album", NULL, 
 									   &target, NULL);
 					}
 					
-					if (!file) {
+					if (!file && target) {
 						file = g_file_new_for_path (target);
 					}
-					
-					found = g_build_filename (dirname, name, NULL);
-					file_found = g_file_new_for_path (found);
-					
-					g_file_copy (file_found, file, 0, NULL, NULL, NULL, &error);
-					
-					if (!error) {
-						retval = TRUE;
-					} else {
-						g_error_free (error);
-						retval = FALSE;
+
+					if (file) {
+						GFile *file_found;
+
+						found = g_build_filename (dirname, name, NULL);
+						file_found = g_file_new_for_path (found);
+						g_file_copy (file_found, file, 0, NULL, NULL, NULL, &error);
+
+						if (!error) {
+							retval = TRUE;
+						} else {
+							g_error_free (error);
+							error = NULL;
+							retval = FALSE;
+						}
+						
+						g_free (found);
+						g_object_unref (file_found);
 					}
-					
-					g_free (found);
-					g_object_unref (file_found);
 				} else {
 #ifdef HAVE_GDKPIXBUF
 					if (g_str_has_suffix (name, "png")) {
@@ -508,6 +517,7 @@ tracker_albumart_heuristic (const gchar *artist_,
 						
 						if (error) {
 							g_error_free (error);
+							error = NULL;
 							retval = FALSE;
 						} else {
 							if (!target) {
