@@ -1,3 +1,16 @@
+tracker (0.6.94-9maemo1) stable; urgency=low
+
+  * Fixes not crawling inserted media AFTER indexing is complete
+  * Fixes album art heuristics
+  * Fixes missing va_end calls in evolution-imap module when returning
+  * Fixes unchecked return values g_stat() and g_file_get_content()
+  * Fixes unused variables left in various places found by coverity
+  * Fixes leaks in utils/qdbm/ print and search applications
+  * Fixes xmp extractor white balance check which had old code in use
+  * Fixes RDF query functions which failed coverity checks
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 13 May 2009 18:30:00 +0000
+
 tracker (0.6.94-8maemo1) stable; urgency=low
 
   * Fixes condition where we hang setting volume states with no volumes
