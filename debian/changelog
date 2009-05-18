@@ -1,3 +1,19 @@
+tracker (0.6.94-10maemo1) stable; urgency=low
+
+  * Fixes: NB#110584, Image:HasKeywords cannot be used for ImageViewer...
+  * Fixes: NB#115978, two instances of "0" are seen in the tracker-unique...
+  * Fixes n updates vs. 1 insert to DB Services table, much faster now
+  * Fixes SQLite FTS warning in logs
+  * Fixes double free in MP3 extractor
+  * Fixes memory leaks in tracker-files
+  * Fixes trackerd to remove QDBM indexes on reindex too.
+  * Fixes indexer to disable all sync/async flushing on any error
+  * Fixes SEGFAULT if calling g_filename_to_utf8() with symlink
+  * Improves indexer's error handling, we now pause on error
+  * Adds dynamic pragma loading for SQLite now in $HOME/.config/tracker
+
+ -- Martyn Russell <martyn@imendio.com>  Mon, 18 May 2009 16:30:00 +0000
+
 tracker (0.6.94-9maemo1) stable; urgency=low
 
   * Fixes not crawling inserted media AFTER indexing is complete
