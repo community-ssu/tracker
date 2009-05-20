@@ -95,8 +95,6 @@
 #define TRACKER_INDEXER_ERROR_CODE  0
 
 /* Properties that change in move event */
-#define METADATA_FILE_NAME_DELIMITED "File:NameDelimited"
-#define METADATA_FILE_EXT	     "File:Ext"
 #define METADATA_FILE_PATH	     "File:Path"
 #define METADATA_FILE_NAME	     "File:Name"
 #define METADATA_FILE_MIMETYPE       "File:Mime"
@@ -1141,6 +1139,7 @@ index_metadata_item (TrackerField	 *field,
 	gint score;
 	gboolean reached_end = FALSE;
 
+#ifdef ENABLE_FTS
 	parsed_value = tracker_parser_text_to_string (value,
 						      data->language,
 						      tracker_config_get_max_word_length (data->config),
@@ -1148,7 +1147,25 @@ index_metadata_item (TrackerField	 *field,
 						      tracker_field_get_filtered (field),
 						      tracker_field_get_filtered (field),
 						      tracker_field_get_delimited (field));
+#else
+	parsed_value = NULL;
+#endif /* ENABLE_FTS */
 
+	if (data->add) {
+		tracker_data_update_set_metadata (data->context,
+						  data->service,
+						  data->id,
+						  field,
+						  value,
+						  parsed_value);
+	} else {
+		tracker_data_update_delete_metadata (data->service,
+						     data->id,
+						     field,
+						     value);
+	}
+
+#ifdef ENABLE_FTS
 	if (!parsed_value) {
 		return;
 	}
@@ -1199,21 +1216,8 @@ index_metadata_item (TrackerField	 *field,
 		}
 	}
 
-	if (data->add) {
-		tracker_data_update_set_metadata (data->context, 
-						  data->service, 
-						  data->id, 
-						  field, 
-						  value, 
-						  parsed_value);
-	} else {
-		tracker_data_update_delete_metadata (data->service, 
-						     data->id, 
-						     field, 
-						     value);
-	}
-
 	g_free (parsed_value);
+#endif
 }
 
 static void
@@ -1626,22 +1630,26 @@ generate_item_thumbnail (TrackerIndexer        *indexer,
 			 const gchar           *basename,
 			 TrackerModuleMetadata *metadata)
 {
-	const gchar *path, *mime_type;
+	const gchar *mime_type;
 
-	path = tracker_module_metadata_lookup (metadata, METADATA_FILE_NAME_DELIMITED, FALSE);
 	mime_type = tracker_module_metadata_lookup (metadata, METADATA_FILE_MIMETYPE, FALSE);
 
-	if (path && path[0] == G_DIR_SEPARATOR && mime_type &&
+	if (dirname && 
+	    dirname[0] == G_DIR_SEPARATOR && 
+	    mime_type &&
 	    tracker_config_get_enable_thumbnails (indexer->private->config)) {
 		GFile *file;
 		gchar *uri;
+		gchar *path;
 
+		path = g_build_filename (dirname, basename, NULL);
 		file = g_file_new_for_path (path);
+		g_free (path);
+
 		uri = g_file_get_uri (file);
+		g_object_unref (file);
 
 		tracker_thumbnailer_queue_file (uri, mime_type);
-
-		g_object_unref (file);
 		g_free (uri);
 	}
 }
@@ -1670,6 +1678,11 @@ item_add_or_update (TrackerIndexer        *indexer,
 		start_transaction (indexer);
 	}
 
+	service_path = g_build_path (G_DIR_SEPARATOR_S,
+				     dirname,
+				     basename,
+				     NULL);
+
 	exists = tracker_data_query_service_exists (service, dirname, basename, &id, NULL, &enabled);
 
 	if (exists && !enabled) {
@@ -1685,16 +1698,13 @@ item_add_or_update (TrackerIndexer        *indexer,
 
 		if (tracker_module_file_get_flags (info->module_file) & TRACKER_FILE_CONTENTS_STATIC) {
 			/* According to the module, the metadata can't change for this item */
-			g_debug ("Not updating static item '%s/%s'",
-				 dirname,
-				 basename);
+			g_debug ("Not updating static item '%s'", service_path);
+			g_free (service_path);
 			return;
 		}
 
 		/* Update case */
-		g_debug ("Updating item '%s/%s'", 
-			 dirname, 
-			 basename);
+		g_debug ("Updating item '%s'", service_path);
 
 		/* "metadata" (new metadata) contains embedded props and can contain
 		 * non-embedded properties with default values! Dont overwrite those 
@@ -1730,16 +1740,11 @@ item_add_or_update (TrackerIndexer        *indexer,
 		item_update_content (indexer, service, id, old_text, text);
 
 		if (strcmp (tracker_service_get_name (service), "Folders") == 0) {
-			gchar *path;
-
 			/* Remove no longer existing children, this is necessary in case
 			 * there were files added/removed in a directory between tracker
 			 * executions
 			 */
-
-			path = g_build_path (G_DIR_SEPARATOR_S, dirname, basename, NULL);
-			remove_stale_children (indexer, service, info, path);
-			g_free (path);
+			remove_stale_children (indexer, service, info, service_path);
 		}
 
 		g_free (old_text);
@@ -1750,14 +1755,12 @@ item_add_or_update (TrackerIndexer        *indexer,
 		GHashTable *data;
 		const gchar *udi;
 
-		g_debug ("Adding item '%s/%s'",
-			 dirname,
-			 basename);
+		g_debug ("Adding item '%s'", service_path);
 
 		/* Service wasn't previously indexed */
 		id = tracker_data_update_get_new_service_id (indexer->private->common);
 		data = tracker_module_metadata_get_hash_table (metadata);
-		udi = tracker_hal_udi_get_for_path (indexer->private->hal, dirname);
+		udi = tracker_hal_udi_get_for_path (indexer->private->hal, service_path);
 
 		context = tracker_data_update_metadata_context_new (TRACKER_CONTEXT_TYPE_INSERT,
 								    service, id);
@@ -1792,13 +1795,6 @@ item_add_or_update (TrackerIndexer        *indexer,
 
 	generate_item_thumbnail (indexer, dirname, basename, metadata);
 
-	/* TODO: URI branch path -> uri */
-
-	service_path = g_build_path (G_DIR_SEPARATOR_S, 
-				     dirname, 
-				     basename, 
-				     NULL);
-
 #ifdef ENABLE_TTL_LOADER
 #ifdef HAVE_HAL
 	if (tracker_hal_path_is_on_removable_device (indexer->private->hal,
@@ -1828,12 +1824,11 @@ filter_invalid_after_move_properties (TrackerField *field,
 
 	name = tracker_field_get_name (field);
 
-	if (g_strcmp0 (name, METADATA_FILE_NAME_DELIMITED) == 0 ||
-	    g_strcmp0 (name, METADATA_FILE_NAME) == 0 ||
-	    g_strcmp0 (name, METADATA_FILE_PATH) == 0 ||
-	    g_strcmp0 (name, METADATA_FILE_EXT) == 0) {
+	if (g_strcmp0 (name, METADATA_FILE_NAME) == 0 ||
+	    g_strcmp0 (name, METADATA_FILE_PATH) == 0) {
 		return FALSE;
 	}
+
 
 	return TRUE;
 }
@@ -1923,7 +1918,6 @@ update_moved_item_index (TrackerIndexer      *indexer,
 	TrackerDataUpdateMetadataContext *context;
 	TrackerModuleMetadata *new_metadata;
 	gchar *path, *new_path, *new_name;
-	const gchar *ext;
 
 	path = g_file_get_path (file);
 
@@ -1942,13 +1936,6 @@ update_moved_item_index (TrackerIndexer      *indexer,
 
 	tracker_module_metadata_add_string (new_metadata, METADATA_FILE_PATH, new_path);
 	tracker_module_metadata_add_string (new_metadata, METADATA_FILE_NAME, new_name);
-	tracker_module_metadata_add_string (new_metadata, METADATA_FILE_NAME_DELIMITED, path);
-
-	ext = strrchr (path, '.');
-	if (ext) {
-		ext++;
-		tracker_module_metadata_add_string (new_metadata, METADATA_FILE_EXT, ext);
-	}
 
 	context = tracker_data_update_metadata_context_new (TRACKER_CONTEXT_TYPE_UPDATE,
 							    service, service_id);
@@ -1984,7 +1971,9 @@ item_erase (TrackerIndexer *indexer,
 		gchar *uri;
 
 		/* TODO URI branch: this is a URI conversion */
-		path = tracker_data_metadata_lookup (data_metadata, "File:NameDelimited");
+		path = g_build_path (tracker_data_metadata_lookup (data_metadata, "File:Path"),
+				     tracker_data_metadata_lookup (data_metadata, "File:Name"),
+				     NULL);
 		file = g_file_new_for_path (path);
 		uri = g_file_get_uri (file);
 		g_object_unref (file);

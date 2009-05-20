@@ -86,6 +86,7 @@ typedef struct {
 
 	unsigned char  *album_art_data;
 	guint           album_art_size;
+	const gchar    *album_art_mime;
 
 } MetadataExtractor;
 
@@ -236,6 +237,48 @@ get_media_duration (MetadataExtractor *extractor)
 }
 
 static void
+get_embedded_album_art(MetadataExtractor *extractor)
+{
+	const GValue *value;
+	guint         lindex;
+
+	lindex = 0;
+
+	do {
+		value = gst_tag_list_get_value_index (extractor->tagcache, GST_TAG_IMAGE, lindex);
+
+		if (value) {
+			GstBuffer    *buffer;
+			GstCaps      *caps;
+			GstStructure *caps_struct;
+			gint          type;
+
+			buffer = gst_value_get_buffer (value);
+			caps   = gst_buffer_get_caps (buffer);
+			caps_struct = gst_caps_get_structure (buffer->caps, 0);
+
+			gst_structure_get_enum (caps_struct,
+						"image-type",
+						GST_TYPE_TAG_IMAGE_TYPE,
+						&type);
+
+			if ((type == GST_TAG_IMAGE_TYPE_FRONT_COVER)||
+			    ((type == GST_TAG_IMAGE_TYPE_UNDEFINED)&&(extractor->album_art_size == 0))) {
+				extractor->album_art_data = buffer->data;
+				extractor->album_art_size = buffer->size;
+				extractor->album_art_mime = gst_structure_get_name (caps_struct);
+				g_debug ("Mime was %s", extractor->album_art_mime);
+				return;
+			}
+
+			gst_object_unref (caps);
+
+			lindex++;
+		}
+	} while (value);
+}
+
+static void
 extract_metadata (MetadataExtractor *extractor,
 		  GHashTable        *metadata)
 {
@@ -248,7 +291,9 @@ extract_metadata (MetadataExtractor *extractor,
 		/* General */
 		add_string_gst_tag (metadata, "File:Copyright", extractor->tagcache, GST_TAG_COPYRIGHT);
 		add_string_gst_tag (metadata, "File:License", extractor->tagcache, GST_TAG_LICENSE);
+#ifdef ENABLE_DETAILED_METADATA
 		add_string_gst_tag (metadata, "DC:Coverage", extractor->tagcache, GST_TAG_LOCATION);
+#endif /* ENABLE_DETAILED_METADATA */
 
 		/* Audio */
  		add_string_gst_tag (metadata, "Audio:Album", extractor->tagcache, GST_TAG_ALBUM);
@@ -256,13 +301,17 @@ extract_metadata (MetadataExtractor *extractor,
 		add_uint_gst_tag   (metadata, "Audio:TrackNo", extractor->tagcache, GST_TAG_TRACK_NUMBER);
 		add_uint_gst_tag   (metadata, "Audio:DiscNo", extractor->tagcache, GST_TAG_ALBUM_VOLUME_NUMBER);
 		add_string_gst_tag (metadata, "Audio:Performer", extractor->tagcache, GST_TAG_PERFORMER);
+#ifdef ENABLE_DETAILED_METADATA
 		add_double_gst_tag (metadata, "Audio:TrackGain", extractor->tagcache, GST_TAG_TRACK_GAIN);
 		add_double_gst_tag (metadata, "Audio:PeakTrackGain", extractor->tagcache, GST_TAG_TRACK_PEAK);
 		add_double_gst_tag (metadata, "Audio:AlbumGain", extractor->tagcache, GST_TAG_ALBUM_GAIN);
 		add_double_gst_tag (metadata, "Audio:AlbumPeakGain", extractor->tagcache, GST_TAG_ALBUM_PEAK);
+#endif /* ENABLE_DETAILED_METADATA */
 		add_y_date_gst_tag (metadata, "Audio:ReleaseDate", extractor->tagcache, GST_TAG_DATE);
 		add_string_gst_tag (metadata, "Audio:Genre", extractor->tagcache, GST_TAG_GENRE);
+#ifdef ENABLE_DETAILED_METADATA
 		add_string_gst_tag (metadata, "Audio:Codec", extractor->tagcache, GST_TAG_AUDIO_CODEC);
+#endif /* ENABLE_DETAILED_METADATA */
 
 		/* Video */
 		add_string_gst_tag (metadata, "Video:Codec", extractor->tagcache, GST_TAG_VIDEO_CODEC);
@@ -279,10 +328,13 @@ extract_metadata (MetadataExtractor *extractor,
 		} else if (extractor->mime == EXTRACT_MIME_AUDIO) {
 			add_string_gst_tag (metadata, "Audio:Title", extractor->tagcache, GST_TAG_TITLE);
 			add_string_gst_tag (metadata, "Audio:Artist", extractor->tagcache, GST_TAG_ARTIST);
+#ifdef ENABLE_DETAILED_METADATA
 			add_string_gst_tag (metadata, "Audio:Comment", extractor->tagcache, GST_TAG_COMMENT);
+#endif /* ENABLE_DETAILED_METADATA */
 		}
  	}
 
+#ifdef ENABLE_DETAILED_METADATA
 	if (extractor->audio_channels >= 0) {
 		add_uint_info (metadata,
 			       g_strdup ("Audio:Channels"),
@@ -294,6 +346,7 @@ extract_metadata (MetadataExtractor *extractor,
 			       g_strdup ("Audio:Samplerate"),
 			       extractor->audio_samplerate);
 	}
+#endif /* ENABLE_DETAILED_METADATA */
 
 	if (extractor->video_height >= 0) {
 		if (extractor->mime == EXTRACT_MIME_IMAGE) {
@@ -333,6 +386,8 @@ extract_metadata (MetadataExtractor *extractor,
  		if (extractor->duration >= 0) {
  			add_int64_info (metadata, g_strdup ("Audio:Duration"), extractor->duration);
  		}
+
+		get_embedded_album_art (extractor);
  	}
 
 	if (extractor->audiotags) {
@@ -673,6 +728,10 @@ tracker_extract_gstreamer (const gchar *uri,
 	extractor->audiotags    = NULL;
 	extractor->videotags    = NULL;	
 
+	extractor->album_art_data = NULL;
+	extractor->album_art_size = 0;
+	extractor->album_art_mime = NULL;
+
 	extractor->duration = -1;
 	extractor->video_fps_n = extractor->video_fps_d = -1;
 	extractor->video_height = extractor->video_width = -1;
@@ -749,13 +808,13 @@ tracker_extract_gstreamer (const gchar *uri,
 	/* Save embedded art */
 	if (extractor->album_art_data && extractor->album_art_size) {
 #ifdef HAVE_GDKPIXBUF
-		tracker_process_albumart (extractor->album_art_data, extractor->album_art_size,
+		tracker_process_albumart (extractor->album_art_data, extractor->album_art_size, extractor->album_art_mime,
 					  /* g_hash_table_lookup (metadata, "Audio:Artist") */ NULL,
 					  g_hash_table_lookup (metadata, "Audio:Album"),
 					  g_hash_table_lookup (metadata, "Audio:AlbumTrackCount"),
 					  uri);
 #else
-		tracker_process_albumart (NULL, 0,
+		tracker_process_albumart (NULL, 0, NULL,
 					  /* g_hash_table_lookup (metadata, "Audio:Artist") */ NULL,
 					  g_hash_table_lookup (metadata, "Audio:Album"),
 					  g_hash_table_lookup (metadata, "Audio:AlbumTrackCount"),
