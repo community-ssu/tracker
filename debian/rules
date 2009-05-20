@@ -24,6 +24,7 @@ DEB_CONFIGURE_EXTRA_FLAGS := 			\
 	--disable-imagemagick			\
 	--disable-unac 				\
 	--disable-fts				\
+	--disable-detailed-metadata		\
 	--enable-video-extractor=gstreamer 	\
 	--disable-gstreamer-helix		\
 	--enable-external-sqlite 		\

@@ -1,3 +1,19 @@
+tracker (0.6.94-11maemo1) stable; urgency=low
+
+  * Fixes: NB#110584, Image:HasKeywords cannot be used for ImageViewer...
+  * Fixes: NB#113083, Tracker extracts Sub-location instead of Location...
+  * Fixes: NB#106085, Tracked database is not updated when images were...
+  * Fixes indexer potential path breakage by using g_build_path instead
+  * Fixes indexer so we do not parse metadata text if FTS is disabled
+  * Fixes mime check for albumart extraction in gstreamer & mp3 extractors
+  * Fixes max extractor time per file from 10s to 5s, videos reached this
+  * Improves indexing speed by not inserting less important metadata to db
+  * Improves indexing speed by using less columns for Services indices
+  * Improves HAL UDI lookup speed from ~5ms to 0.5ms
+  * Improves embedded albumart extraction speed
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 18 May 2009 18:00:00 +0000
+
 tracker (0.6.94-10maemo1) stable; urgency=low
 
   * Fixes: NB#110584, Image:HasKeywords cannot be used for ImageViewer...
