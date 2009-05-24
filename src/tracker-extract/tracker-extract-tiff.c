@@ -23,6 +23,7 @@
 
 #include <glib.h>
 #include <glib/gstdio.h>
+#include <string.h>
 
 #include <tiff.h>
 #include <tiffio.h>
@@ -51,6 +52,7 @@ typedef struct {
 	guint	       tag;
 	gchar	      *name;
 	TagType        type;
+	gboolean       multi;
 	PostProcessor  post;
 } TiffTag;
  
@@ -65,33 +67,37 @@ static TrackerExtractData data[] = {
 
 /* FIXME: We are missing some */
 static TiffTag tags[] = {
-	{ TIFFTAG_ARTIST, "Image:Creator", TIFF_TAGTYPE_STRING, NULL },
-	{ TIFFTAG_COPYRIGHT, "File:Copyright", TIFF_TAGTYPE_STRING, NULL },
-	{ TIFFTAG_DATETIME, "Image:Date", TIFF_TAGTYPE_STRING, NULL },
-	{ TIFFTAG_DOCUMENTNAME, "Image:Title", TIFF_TAGTYPE_STRING, NULL },
-	{ TIFFTAG_IMAGEDESCRIPTION, "Image:Comments", TIFF_TAGTYPE_STRING, NULL },
-	{ TIFFTAG_IMAGEWIDTH, "Image:Width", TIFF_TAGTYPE_UINT32, NULL },
-	{ TIFFTAG_IMAGELENGTH, "Image:Height", TIFF_TAGTYPE_UINT32, NULL },
-	{ TIFFTAG_MAKE, "Image:CameraMake", TIFF_TAGTYPE_STRING, NULL },
-	{ TIFFTAG_MODEL, "Image:CameraModel", TIFF_TAGTYPE_STRING, NULL },
-	{ TIFFTAG_ORIENTATION, "Image:Orientation", TIFF_TAGTYPE_UINT16, NULL },
-	{ TIFFTAG_SOFTWARE, "Image:Software", TIFF_TAGTYPE_STRING, NULL },
-	{ -1, NULL, TIFF_TAGTYPE_UNDEFINED, NULL }
+	{ TIFFTAG_ARTIST, "Image:Creator", TIFF_TAGTYPE_STRING, FALSE, NULL },
+	{ TIFFTAG_COPYRIGHT, "File:Copyright", TIFF_TAGTYPE_STRING, FALSE, NULL },
+	{ TIFFTAG_DATETIME, "Image:Date", TIFF_TAGTYPE_STRING, FALSE, NULL },
+	{ TIFFTAG_DOCUMENTNAME, "Image:Title", TIFF_TAGTYPE_STRING, FALSE, NULL },
+	{ TIFFTAG_IMAGEDESCRIPTION, "Image:Comments", TIFF_TAGTYPE_STRING, FALSE, NULL },
+	{ TIFFTAG_IMAGEWIDTH, "Image:Width", TIFF_TAGTYPE_UINT32, FALSE, NULL },
+	{ TIFFTAG_IMAGELENGTH, "Image:Height", TIFF_TAGTYPE_UINT32, FALSE, NULL },
+	{ TIFFTAG_ORIENTATION, "Image:Orientation", TIFF_TAGTYPE_UINT16, FALSE, NULL },
+#ifdef ENABLE_DETAILED_METADATA
+	{ TIFFTAG_MAKE, "Image:CameraMake", TIFF_TAGTYPE_STRING, FALSE, NULL },
+	{ TIFFTAG_MODEL, "Image:CameraModel", TIFF_TAGTYPE_STRING, FALSE, NULL },
+	{ TIFFTAG_SOFTWARE, "Image:Software", TIFF_TAGTYPE_STRING, FALSE, NULL },
+#endif /* ENABLE_DETAILED_METADATA */
+	{ -1, NULL, TIFF_TAGTYPE_UNDEFINED, FALSE, NULL }
 };
 
 static TiffTag exiftags[] = {
-	{ EXIFTAG_EXPOSURETIME, "Image:ExposureTime", TIFF_TAGTYPE_DOUBLE, NULL},
-	{ EXIFTAG_FNUMBER, "Image:FNumber", TIFF_TAGTYPE_DOUBLE, NULL},
-	{ EXIFTAG_EXPOSUREPROGRAM, "Image:ExposureProgram", TIFF_TAGTYPE_UINT16, NULL },
-	{ EXIFTAG_ISOSPEEDRATINGS, "Image:ISOSpeed", TIFF_TAGTYPE_C16_UINT16, NULL},
-	{ EXIFTAG_DATETIMEORIGINAL, "Image:Date", TIFF_TAGTYPE_STRING, date_to_iso8601 },
-	{ EXIFTAG_METERINGMODE, "Image:MeteringMode", TIFF_TAGTYPE_UINT16, NULL},
-	{ EXIFTAG_FLASH, "Image:Flash", TIFF_TAGTYPE_UINT16, NULL},
-	{ EXIFTAG_FOCALLENGTH, "Image:FocalLength", TIFF_TAGTYPE_DOUBLE, NULL},
-	{ EXIFTAG_PIXELXDIMENSION, "Image:Width", TIFF_TAGTYPE_UINT32, NULL},
-	{ EXIFTAG_PIXELYDIMENSION, "Image:Height", TIFF_TAGTYPE_UINT32, NULL},
-	{ EXIFTAG_WHITEBALANCE, "Image:WhiteBalance", TIFF_TAGTYPE_UINT16, NULL},
-	{ -1, NULL, TIFF_TAGTYPE_UNDEFINED, NULL }
+	{ EXIFTAG_ISOSPEEDRATINGS, "Image:ISOSpeed", TIFF_TAGTYPE_C16_UINT16, FALSE, NULL},
+	{ EXIFTAG_DATETIMEORIGINAL, "Image:Date", TIFF_TAGTYPE_STRING, FALSE, date_to_iso8601 },
+	{ EXIFTAG_FLASH, "Image:Flash", TIFF_TAGTYPE_UINT16, FALSE, NULL},
+	{ EXIFTAG_PIXELXDIMENSION, "Image:Width", TIFF_TAGTYPE_UINT32, FALSE, NULL},
+	{ EXIFTAG_PIXELYDIMENSION, "Image:Height", TIFF_TAGTYPE_UINT32, FALSE, NULL},
+#ifdef ENABLE_DETAILED_METADATA
+	{ EXIFTAG_EXPOSURETIME, "Image:ExposureTime", TIFF_TAGTYPE_DOUBLE, FALSE, NULL},
+	{ EXIFTAG_FNUMBER, "Image:FNumber", TIFF_TAGTYPE_DOUBLE, FALSE, NULL},
+	{ EXIFTAG_EXPOSUREPROGRAM, "Image:ExposureProgram", TIFF_TAGTYPE_UINT16, FALSE, NULL },
+ 	{ EXIFTAG_METERINGMODE, "Image:MeteringMode", TIFF_TAGTYPE_UINT16, FALSE, NULL},
+	{ EXIFTAG_FOCALLENGTH, "Image:FocalLength", TIFF_TAGTYPE_DOUBLE, FALSE, NULL},
+	{ EXIFTAG_WHITEBALANCE, "Image:WhiteBalance", TIFF_TAGTYPE_UINT16, FALSE, NULL},
+#endif /* ENABLE_DETAILED_METADATA */
+	{ -1, NULL, TIFF_TAGTYPE_UNDEFINED, FALSE, NULL }
 };
 
 static gchar *
@@ -102,6 +108,56 @@ date_to_iso8601 (gchar *date)
 	 * ex. "2007-04-15T17:35:58+0200 where +0200 is localtime
 	 */
 	return tracker_date_format_to_iso8601 (date, EXIF_DATE_FORMAT);
+}
+
+static void
+metadata_append (GHashTable *metadata, gchar *key, gchar *value, gboolean append)
+{
+	gchar   *new_value;
+	gchar   *orig;
+	gchar  **list;
+	gboolean found = FALSE;
+	guint    i;
+
+	if (append && (orig = g_hash_table_lookup (metadata, key))) {
+		gchar *escaped;
+		
+		escaped = tracker_escape_metadata (value);
+
+		list = g_strsplit (orig, "|", -1);			
+		for (i=0; list[i]; i++) {
+			if (strcmp (list[i], escaped) == 0) {
+				found = TRUE;
+				break;
+			}
+		}			
+		g_strfreev(list);
+
+		if (!found) {
+			new_value = g_strconcat (orig, "|", escaped, NULL);
+			g_hash_table_insert (metadata, g_strdup (key), new_value);
+		}
+
+		g_free (escaped);		
+	} else {
+		new_value = tracker_escape_metadata (value);
+		g_hash_table_insert (metadata, g_strdup (key), new_value);
+
+		/* FIXME Postprocessing is evil and should be elsewhere */
+		if (strcmp (key, "Image:Keywords") == 0) {
+			g_hash_table_insert (metadata,
+					     g_strdup ("Image:HasKeywords"),
+					     tracker_escape_metadata ("1"));			
+		}		
+	}
+
+	/* Adding certain fields also to keywords FIXME Postprocessing is evil */
+	if ((strcmp (key, "Image:Title") == 0) ||
+	    (strcmp (key, "Image:Description") == 0) ) {
+		g_hash_table_insert (metadata,
+				     g_strdup ("Image:HasKeywords"),
+				     tracker_escape_metadata ("1"));
+	}
 }
 
 static void
@@ -135,7 +191,7 @@ extract_tiff (const gchar *filename,
 
 	if ((image = TIFFOpen (filename, "r")) == NULL){
 		g_critical ("Could not open image:'%s'\n", filename);
-		return;
+		goto fail;
 	}
 
 #ifdef HAVE_LIBIPTCDATA
@@ -205,13 +261,15 @@ extract_tiff (const gchar *filename,
 				}
 
 				if (tag->post) {
-					g_hash_table_insert (metadata,
-							     g_strdup (tag->name),
-							     tracker_escape_metadata ((*tag->post) (buffer)));
+					metadata_append (metadata,
+							 g_strdup (tag->name),
+							 tracker_escape_metadata ((*tag->post) (buffer)),
+							 tag->multi);
 				} else {
-					g_hash_table_insert (metadata, 
-							     g_strdup (tag->name),
-							     tracker_escape_metadata (buffer));
+					metadata_append (metadata, 
+							 g_strdup (tag->name),
+							 tracker_escape_metadata (buffer),
+							 tag->multi);
 				}
 			}
 		}
@@ -254,18 +312,26 @@ extract_tiff (const gchar *filename,
 			}
 
 		if (tag->post) {
-			g_hash_table_insert (metadata, 
-					     g_strdup (tag->name),
-					     tracker_escape_metadata ((*tag->post) (buffer)));
+			metadata_append (metadata, 
+					 g_strdup (tag->name),
+					 tracker_escape_metadata ((*tag->post) (buffer)),
+					 tag->multi);
 		} else {
-			g_hash_table_insert (metadata, 
-					     g_strdup (tag->name),
-					     tracker_escape_metadata (buffer));
+			metadata_append (metadata, 
+					 g_strdup (tag->name),
+					 tracker_escape_metadata (buffer),
+					 tag->multi);
 		}
 	}
 
-	/* Check that we have the minimum data. FIXME We should not need to do this */
-	
+	TIFFClose (image);
+
+fail:
+	/* We fallback to the file's modified time for the
+	 * "Image:Date" metadata if it doesn't exist.
+	 *
+	 * FIXME: This shouldn't be necessary.
+	 */
 	if (!g_hash_table_lookup (metadata, "Image:Date")) {
 		gchar *date;
 		guint64 mtime;
@@ -278,8 +344,6 @@ extract_tiff (const gchar *filename,
 				     tracker_escape_metadata (date));
 		g_free (date);
 	}
-
-	TIFFClose (image);
 }
 
 TrackerExtractData *

@@ -1,3 +1,4 @@
+
 /* basic info for a file or service object */
 CREATE TABLE  Services
 (
@@ -18,7 +19,7 @@ CREATE TABLE  Services
 	KeyMetadata5		Text,
 	KeyMetadata6		Integer, /* NOTE: If you change the type of any of these KeyMetadata%d members, */
 	KeyMetadata7		Integer, /*       then you must update the source in: */
-	KeyMetadata8		Integer, /*       tracker_data_query_metadata_field_values(); */
+	KeyMetadata8		Integer, /*       tracker_data_query_metadata_field_values() */
 	KeyMetadata9		Text,
 	KeyMetadata10		Text,
 	KeyMetadata11		Text,
@@ -80,7 +81,7 @@ CREATE TABLE  ServiceMetaData
 	MetaDataCollation	Text
 );
 
-CREATE INDEX ServiceMetaDataCompoundIndex ON ServiceMetaData (ServiceID, MetaDataID, MetaDataDisplay, MetaDataCollation);
+CREATE INDEX ServiceMetaDataCompoundIndex ON ServiceMetaData (ServiceID, MetaDataID);
 
 /* metadata for all keyword types - keywords are db indexed for fast searching - they are also not processed like other metadata. */
 CREATE TABLE  ServiceKeywordMetaData 
@@ -91,7 +92,7 @@ CREATE TABLE  ServiceKeywordMetaData
 	MetaDataValue		Text COLLATE NOCASE
 );
 
-CREATE INDEX ServiceKeywordMetaDataCompoundIndex ON ServiceKeywordMetaData (ServiceID, MetaDataID, MetaDataValue);
+CREATE INDEX ServiceKeywordMetaDataCompoundIndex ON ServiceKeywordMetaData (ServiceID, MetaDataID);
 
 /* metadata for all integer/date types */
 CREATE TABLE  ServiceNumericMetaData 
@@ -102,7 +103,7 @@ CREATE TABLE  ServiceNumericMetaData
 	MetaDataValue		Integer not null
 );
 
-CREATE INDEX ServiceNumericMetaDataCompoundIndex ON ServiceNumericMetaData (ServiceID, MetaDataID, MetaDataValue);
+CREATE INDEX ServiceNumericMetaDataCompoundIndex ON ServiceNumericMetaData (ServiceID, MetaDataID);
 
 
 CREATE TABLE DeletedServices

@@ -51,6 +51,7 @@ typedef gchar * (*PostProcessor) (gchar *);
 typedef struct {
 	const gchar   *name;
 	const gchar   *type;
+	gboolean       multi;
 	PostProcessor  post;
 } TagProcessors;
 
@@ -59,16 +60,18 @@ static void   extract_png	      (const gchar *filename,
 				       GHashTable  *metadata);
 
 static TagProcessors tag_processors[] = {
-	{ "Author",		"Image:Creator",      NULL},
-	{ "Creator",		"Image:Creator",      NULL},
-	{ "Description",	"Image:Description",  NULL},
-	{ "Comment",		"Image:Comments",     NULL},
-	{ "Copyright",		"File:Copyright",     NULL},
-	{ "Creation Time",	"Image:Date",	      rfc1123_to_iso8601_date},
-	{ "Title",		"Image:Title",	      NULL},
-	{ "Software",		"Image:Software",     NULL},
-	{ "Disclaimer",		"File:License",       NULL},
-	{ NULL,			NULL,		      NULL},
+	{ "Author",	   "Image:Creator",     FALSE, NULL },
+	{ "Creator",	   "Image:Creator",     FALSE, NULL },
+	{ "Description",   "Image:Description", FALSE, NULL },
+	{ "Comment",	   "Image:Comments",    FALSE, NULL },
+	{ "Copyright",	   "File:Copyright",    FALSE, NULL },
+	{ "Creation Time", "Image:Date",	FALSE, rfc1123_to_iso8601_date },
+	{ "Title",	   "Image:Title",	FALSE, NULL },
+	{ "Disclaimer",	   "File:License",      FALSE, NULL },
+#ifdef ENABLE_DETAILED_METADATA
+	{ "Software",	   "Image:Software",    FALSE, NULL },
+#endif /* ENABLE_DETAILED_METADATA */
+	{ NULL,		   NULL,		FALSE, NULL },
 };
 
 static TrackerExtractData data[] = {
@@ -87,7 +90,60 @@ rfc1123_to_iso8601_date (gchar *date)
 }
 
 static void
-read_metadata (png_structp png_ptr, png_infop info_ptr, GHashTable *metadata)
+metadata_append (GHashTable *metadata, gchar *key, gchar *value, gboolean append)
+{
+	gchar   *new_value;
+	gchar   *orig;
+	gchar  **list;
+	gboolean found = FALSE;
+	guint    i;
+
+	if (append && (orig = g_hash_table_lookup (metadata, key))) {
+		gchar *escaped;
+		
+		escaped = tracker_escape_metadata (value);
+
+		list = g_strsplit (orig, "|", -1);			
+		for (i=0; list[i]; i++) {
+			if (strcmp (list[i], escaped) == 0) {
+				found = TRUE;
+				break;
+			}
+		}			
+		g_strfreev(list);
+
+		if (!found) {
+			new_value = g_strconcat (orig, "|", escaped, NULL);
+			g_hash_table_insert (metadata, g_strdup (key), new_value);
+		}
+
+		g_free (escaped);		
+	} else {
+		new_value = tracker_escape_metadata (value);
+		g_hash_table_insert (metadata, g_strdup (key), new_value);
+
+		/* FIXME Postprocessing is evil and should be elsewhere */
+		if (strcmp (key, "Image:Keywords") == 0) {
+			g_hash_table_insert (metadata,
+					     g_strdup ("Image:HasKeywords"),
+					     tracker_escape_metadata ("1"));			
+		}		
+	}
+
+	/* Adding certain fields also to keywords FIXME Postprocessing is evil */
+	if ((strcmp (key, "Image:Title") == 0) ||
+	    (strcmp (key, "Image:Description") == 0) ) {
+		metadata_append (metadata, "Image:Keywords", value, TRUE);
+		g_hash_table_insert (metadata,
+				     g_strdup ("Image:HasKeywords"),
+				     tracker_escape_metadata ("1"));
+	}
+}
+
+static void
+read_metadata (png_structp  png_ptr, 
+	       png_infop    info_ptr, 
+	       GHashTable  *metadata)
 {
 	gint	     num_text;
 	png_textp    text_ptr;
@@ -121,15 +177,17 @@ read_metadata (png_structp png_ptr, png_infop info_ptr, GHashTable *metadata)
 						
 						str = (*tag_processors[j].post) (text_ptr[i].text);
 						if (str) {
-							g_hash_table_insert (metadata,
-									     g_strdup (tag_processors[j].type),
-									     tracker_escape_metadata (str));
+							metadata_append (metadata,
+									 g_strdup (tag_processors[j].type),
+									 tracker_escape_metadata (str),
+									 tag_processors[j].multi);
 							g_free (str);
 						}
 					} else {
-						g_hash_table_insert (metadata,
-								     g_strdup (tag_processors[j].type),
-								     tracker_escape_metadata (text_ptr[i].text));
+						metadata_append (metadata,
+								 g_strdup (tag_processors[j].type),
+								 tracker_escape_metadata (text_ptr[i].text),
+								 tag_processors[j].multi);
 					}
 					
 					break;
@@ -158,7 +216,7 @@ extract_png (const gchar *filename,
 	size = tracker_file_get_size (filename);
 
 	if (size < 64) {
-		return;
+		goto fail;
 	}
 
 	f = tracker_file_open (filename, "r", FALSE); 
@@ -170,27 +228,27 @@ extract_png (const gchar *filename,
 						  NULL);
 		if (!png_ptr) {
 			tracker_file_close (f, FALSE);
-			return;
+			goto fail;
 		}
 
 		info_ptr = png_create_info_struct (png_ptr);
 		if (!info_ptr) {
 			png_destroy_read_struct (&png_ptr, &info_ptr, NULL);
 			tracker_file_close (f, FALSE);
-			return;
+			goto fail;
 		}
 
 		end_ptr = png_create_info_struct (png_ptr);
 		if (!end_ptr) {
 			png_destroy_read_struct (&png_ptr, &info_ptr, NULL);
 			tracker_file_close (f, FALSE);
-			return;
+			goto fail;
 		}
 
 		if (setjmp (png_jmpbuf (png_ptr))) {
 			png_destroy_read_struct (&png_ptr, &info_ptr, &end_ptr);
 			tracker_file_close (f, FALSE);
-			return;
+			goto fail;
 		}
 
 		png_init_io (png_ptr, f);
@@ -207,7 +265,7 @@ extract_png (const gchar *filename,
 				   &filter_type)) {
 			png_destroy_read_struct (&png_ptr, &info_ptr, &end_ptr);
 			tracker_file_close (f, FALSE);
-			return;
+			goto fail;
 		}
 		
 		/* Read the image. FIXME We should be able to skip this step and
@@ -241,23 +299,28 @@ extract_png (const gchar *filename,
 		g_hash_table_insert (metadata,
 				     g_strdup ("Image:Height"),
 				     tracker_escape_metadata_printf ("%ld", height));
-		
-		/* Check that we have the minimum data. FIXME We should not need to do this */
-		if (!g_hash_table_lookup (metadata, "Image:Date")) {
-			gchar *date;
-			guint64 mtime;
-
-			mtime = tracker_file_get_mtime (filename);
-			date = tracker_date_to_string ((time_t) mtime);
-			
-			g_hash_table_insert (metadata,
-					     g_strdup ("Image:Date"),
-					     tracker_escape_metadata (date));
-			g_free (date);
-		}
 
 		png_destroy_read_struct (&png_ptr, &info_ptr, &end_ptr);
 		tracker_file_close (f, FALSE);
+	}
+	
+fail:
+	/* We fallback to the file's modified time for the
+	 * "Image:Date" metadata if it doesn't exist.
+	 *
+	 * FIXME: This shouldn't be necessary.
+	 */
+	if (!g_hash_table_lookup (metadata, "Image:Date")) {
+		gchar *date;
+		guint64 mtime;
+		
+		mtime = tracker_file_get_mtime (filename);
+		date = tracker_date_to_string ((time_t) mtime);
+		
+		g_hash_table_insert (metadata,
+				     g_strdup ("Image:Date"),
+				     tracker_escape_metadata (date));
+		g_free (date);
 	}
 }
 

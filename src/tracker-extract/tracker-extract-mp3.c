@@ -87,6 +87,7 @@ typedef struct {
 
 	unsigned char *albumartdata;
 	size_t         albumartsize;
+	gchar         *albumartmime;
 } file_data;
 
 enum {
@@ -303,10 +304,13 @@ read_id3v1_buffer (int fd, goffset size)
 	guint bytes_read;
 	guint rc;
 
-	if (lseek (fd, size-ID3V1_SIZE, SEEK_SET) < 0) {
+	if (size<128) {
 		return NULL;
 	}
 
+	if (lseek (fd, size-ID3V1_SIZE, SEEK_SET) < 0) {
+		return NULL;
+	}
 
 	buffer = g_malloc (ID3V1_SIZE);
 
@@ -410,7 +414,7 @@ get_genre_number (const char *str, guint *genre)
 static const gchar *
 get_genre_name (guint number)
 {
-	if (number > G_N_ELEMENTS (genre_names)) {
+	if (number >= G_N_ELEMENTS (genre_names)) {
 		return NULL;
 	}
 
@@ -454,6 +458,10 @@ get_id3 (const gchar *data,
 	const gchar *pos;
 	gchar buf[5];
 
+	if (!data) {
+		return FALSE;
+	}
+	
 	if (size < 128) {
 		return FALSE;
 	}
@@ -548,32 +556,38 @@ mp3_parse_header (const gchar *data,
 		    mpeg_ver = MPEG_ERR;
 		    break;
 	    case 0x1000:
+#ifdef ENABLE_DETAILED_METADATA
 		    g_hash_table_insert (metadata,
 					 g_strdup ("Audio:Codec"),
 					 g_strdup ("MPEG"));
 		    g_hash_table_insert (metadata,
 					 g_strdup ("Audio:CodecVersion"),
 					 g_strdup ("2"));
+#endif /* ENABLE_DETAILED_METADATA */
 		    mpeg_ver = MPEG_V2;
 		    spfp8 = 72;
 		    break;
 	    case 0x1800:
+#ifdef ENABLE_DETAILED_METADATA
 		    g_hash_table_insert (metadata,
 					 g_strdup ("Audio:Codec"),
 					 g_strdup ("MPEG"));
 		    g_hash_table_insert (metadata,
 					 g_strdup ("Audio:CodecVersion"),
 					 g_strdup ("1"));
+#endif /* ENABLE_DETAILED_METADATA */
 		    mpeg_ver = MPEG_V1;
 		    spfp8 = 144;
 		    break;
 	    case 0:
+#ifdef ENABLE_DETAILED_METADATA
 		    g_hash_table_insert (metadata,
 					 g_strdup ("Audio:Codec"),
 					 g_strdup ("MPEG"));
 		    g_hash_table_insert (metadata,
 					 g_strdup ("Audio:CodecVersion"),
 					 g_strdup ("2.5"));
+#endif /* ENABLE_DETAILED_METADATA */
 		    mpeg_ver = MPEG_V25;
 		    spfp8 = 72;
 		    break;
@@ -614,14 +628,18 @@ mp3_parse_header (const gchar *data,
 	
 	if ((header & ch_mask) == ch_mask) {
 		ch = 1;
+#ifdef ENABLE_DETAILED_METADATA
 		g_hash_table_insert (metadata,
 				     g_strdup ("Audio:Channels"),
 				     g_strdup ("1"));
+#endif /* ENABLE_DETAILED_METADATA */
 	} else {
 		ch = 2; /* stereo non stereo select */
+#ifdef ENABLE_DETAILED_METADATA
 		g_hash_table_insert (metadata,
 				     g_strdup ("Audio:Channels"),
 				     g_strdup ("2"));
+#endif /* ENABLE_DETAILED_METADATA */
 	}
 	
 	/* We assume mpeg version, layer and channels are constant in frames */
@@ -687,12 +705,15 @@ mp3_parse_header (const gchar *data,
 				     tracker_escape_metadata_printf ("%d", length));
 	}
 
+#ifdef ENABLE_DETAILED_METADATA
 	g_hash_table_insert (metadata,
 			     g_strdup ("Audio:Samplerate"),
 			     tracker_escape_metadata_printf ("%d", sample_rate));
+
 	g_hash_table_insert (metadata,
 			     g_strdup ("Audio:Bitrate"),
 			     tracker_escape_metadata_printf ("%d", avg_bps*1000));
+#endif /* ENABLE_DETAILED_METADATA */
 
 	return TRUE;
 }
@@ -740,18 +761,24 @@ get_id3v24_tags (const gchar *data,
 		{"TDRC", "Audio:ReleaseDate"},
 		{"TCON", "Audio:Genre"},
 		{"TIT1", "Audio:Genre"},
+#ifdef ENABLE_DETAILED_METADATA
 		{"TENC", "DC:Publishers"},
+#endif /* ENABLE_DETAILED_METADATA */
 		{"TEXT", "Audio:Lyrics"},
 		{"TPE1", "Audio:Artist"},
 		{"TPE2", "Audio:Artist"},
 		{"TPE3", "Audio:Performer"},
 		/*	{"TOPE", "Audio:Artist"}, We dont' want the original artist for now */
+#ifdef ENABLE_DETAILED_METADATA
 		{"TPUB", "DC:Publishers"},
+#endif /* ENABLE_DETAILED_METADATA */
 		{"TOAL", "Audio:Album"},
 		{"TALB", "Audio:Album"},
 		{"TLAN", "File:Language"},
 		{"TIT2", "Audio:Title"},
+#ifdef ENABLE_DETAILED_METADATA
 		{"TIT3", "Audio:Comment"},
+#endif /* ENABLE_DETAILED_METADATA */
 		{"TDRL", "Audio:ReleaseDate"},
 		{"TRCK", "Audio:TrackNo"},
 		{"PCNT", "Audio:PlayCount"},
@@ -942,11 +969,13 @@ get_id3v24_tags (const gchar *data,
 				break;
 			}
 
+#ifdef ENABLE_DETAILED_METADATA
 			if (!tracker_is_empty_string (word)) {
 				g_hash_table_insert (metadata,
 						     g_strdup ("Audio:Comment"),
 						     tracker_escape_metadata (word));
 			}
+#endif /* ENABLE_DETAILED_METADATA */
 
 			g_free (word);
 		}
@@ -971,6 +1000,7 @@ get_id3v24_tags (const gchar *data,
 				offset = pos + 11 + mime_len + 2 + strlen (desc) + 1;
 
 				filedata->albumartdata = g_malloc0 (csize);
+				filedata->albumartmime = g_strdup (mime);
 				memcpy (filedata->albumartdata, &data[offset], csize);
 				filedata->albumartsize = csize;
 			}
@@ -992,13 +1022,17 @@ get_id3v23_tags (const gchar *data,
 		{"TDAT", "Audio:ReleaseDate"},
 		{"TCON", "Audio:Genre"},
 		{"TIT1", "Audio:Genre"},
+#ifdef ENABLE_DETAILED_METADATA
 		{"TENC", "DC:Publishers"},
+#endif /* ENABLE_DETAILED_METADATA */
 		{"TEXT", "Audio:Lyrics"},
 		{"TPE1", "Audio:Artist"},
 		{"TPE2", "Audio:Artist"},
 		{"TPE3", "Audio:Performer"},
 		/*	{"TOPE", "Audio:Artist"}, We don't want the original artist for now */
+#ifdef ENABLE_DETAILED_METADATA
 		{"TPUB", "DC:Publishers"},
+#endif /* ENABLE_DETAILED_METADATA */
 		{"TOAL", "Audio:Album"},
 		{"TALB", "Audio:Album"},
 		{"TLAN", "File:Language"},
@@ -1175,11 +1209,13 @@ get_id3v23_tags (const gchar *data,
 				break;
 			}
 
+#ifdef ENABLE_DETAILED_METADATA
 			if (!tracker_is_empty_string (word)) {
 				g_hash_table_insert (metadata,
 						     g_strdup ("Audio:Comment"),
 						     tracker_escape_metadata (word));
 			}
+#endif /* ENABLE_DETAILED_METADATA */
 
 			g_free (word);
 		}
@@ -1203,6 +1239,7 @@ get_id3v23_tags (const gchar *data,
 				offset = pos + 11 + mime_len + 2 + strlen (desc) + 1;
 				
 				filedata->albumartdata = g_malloc0 (csize);
+				filedata->albumartmime = g_strdup (mime);
 				memcpy (filedata->albumartdata, &data[offset], csize);
 				filedata->albumartsize = csize;
 			}
@@ -1224,8 +1261,10 @@ get_id3v20_tags (const gchar *data,
 		{"TT1", "Audio:Artist"},
 		{"TT2", "Audio:Title"},
 		{"TT3", "Audio:Title"},
+#ifdef ENABLE_DETAILED_METADATA
 		{"TXT", "Audio:Comment"},
 		{"TPB", "DC:Publishers"},
+#endif /* ENABLE_DETAILED_METADATA */
 		{"WAF", "DC:Location"},
 		{"WAR", "DC:Location"},
 		{"WAS", "DC:Location"},
@@ -1243,7 +1282,9 @@ get_id3v20_tags (const gchar *data,
 		{"TOA", "Audio:Artist"},
 		{"TOT", "Audio:Album"},
 		{"TOL", "Audio:Artist"},
+#ifdef ENABLE_DETAILED_METADATA
 		{"COM", "Audio:Comment"},
+#endif /* ENABLE_DETAILED_METADATA */
 		{"TLE", "Audio:Duration"},
 		{ NULL, 0},
 	};
@@ -1340,8 +1381,6 @@ get_id3v20_tags (const gchar *data,
 					g_hash_table_insert (metadata,
 							     g_strdup (tmap[i].type),
 							     tracker_escape_metadata (word));
-				} else {
-					g_free (word);
 				}
 
 				g_free (word);
@@ -1357,13 +1396,16 @@ get_id3v20_tags (const gchar *data,
 			gchar          pic_type;
 			const gchar   *desc;
 			guint          offset;
+			const gchar   *mime;
 
+			mime      = &data[pos + 6 + 3 + 1];
 			pic_type  =  data[pos + 6 + 3 + 1 + 3];
 			desc      = &data[pos + 6 + 3 + 1 + 3 + 1];
 
 			if (pic_type == 3 || (pic_type == 0 && filedata->albumartsize == 0)) {
 				offset = pos + 6 + 3 + 1 + 3  + 1 + strlen (desc) + 1;
 
+				filedata->albumartmime = g_strdup (mime);
 				filedata->albumartdata = g_malloc0 (csize);
 				memcpy (filedata->albumartdata, &data[offset], csize);
 				filedata->albumartsize = csize;
@@ -1607,6 +1649,7 @@ extract_mp3 (const gchar *filename,
 	filedata.id3v2_size = 0;
 	filedata.duration = 0;
 	filedata.albumartdata = NULL;
+	filedata.albumartmime = NULL;
 	filedata.albumartsize = 0;
 
 	size = tracker_file_get_size (filename);
@@ -1692,11 +1735,13 @@ extract_mp3 (const gchar *filename,
 				     tracker_escape_metadata (info.genre));
 	}
 
+#ifdef ENABLE_DETAILED_METADATA
 	if (!tracker_is_empty_string (info.comment)) {
 		g_hash_table_insert (metadata,
 				     g_strdup ("Audio:Comment"),
 				     tracker_escape_metadata (info.comment));
 	}
+#endif /* ENABLE_DETAILED_METADATA */
 
 	if (!tracker_is_empty_string (info.trackno)) {
 		g_hash_table_insert (metadata,
@@ -1719,13 +1764,13 @@ extract_mp3 (const gchar *filename,
 	mp3_parse (buffer, buffer_size, audio_offset, metadata, &filedata);
 
 #ifdef HAVE_GDKPIXBUF
-	tracker_process_albumart (filedata.albumartdata, filedata.albumartsize,
+	tracker_process_albumart (filedata.albumartdata, filedata.albumartsize, filedata.albumartmime,
 				  /* g_hash_table_lookup (metadata, "Audio:Artist") */ NULL,
 				  g_hash_table_lookup (metadata, "Audio:Album"),
 				  g_hash_table_lookup (metadata, "Audio:AlbumTrackCount"),
 				  filename);
 #else
-	tracker_process_albumart (NULL, 0,
+	tracker_process_albumart (NULL, 0, NULL,
 				  /* g_hash_table_lookup (metadata, "Audio:Artist") */ NULL,
 				  g_hash_table_lookup (metadata, "Audio:Album"),
 				  g_hash_table_lookup (metadata, "Audio:AlbumTrackCount"),
@@ -1733,9 +1778,8 @@ extract_mp3 (const gchar *filename,
 
 #endif /* HAVE_GDKPIXBUF */
 
-	if (filedata.albumartdata) {
-		g_free (filedata.albumartdata);
-	}
+	g_free (filedata.albumartdata);
+	g_free (filedata.albumartmime);
 
 	/* Check that we have the minimum data. FIXME We should not need to do this */
 	if (!g_hash_table_lookup (metadata, "Audio:Title")) {

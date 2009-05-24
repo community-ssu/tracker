@@ -1,8 +1,8 @@
-Index: configure.ac
-===================================================================
---- configure.ac	(revision 36841)
-+++ configure.ac	(working copy)
-@@ -104,6 +104,7 @@ if test "x$have_function" = "xno" ; then
+diff --git a/configure.ac b/configure.ac
+index 4602a5c..c1ca5a2 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -126,6 +126,7 @@ if test "x$have_function" = "xno" ; then
  fi
  
  # Library required versions
@@ -10,11 +10,10 @@ Index: configure.ac
  DBUS_REQUIRED=0.60
  GLIB_REQUIRED=2.16.0
  PANGO_REQUIRED=1.0.0
-@@ -247,6 +248,37 @@ fi
- AC_SUBST(GCOV_CFLAGS)
+@@ -271,6 +272,38 @@ AC_SUBST(GCOV_CFLAGS)
  AC_SUBST(GCOV_LIBS)
  
-+####################################################################
+ ####################################################################
 +# Should we build MCE Maemo package integration
 +####################################################################
 +
@@ -45,13 +44,15 @@ Index: configure.ac
 +fi
 +
 +AM_CONDITIONAL(HAVE_MCE, test "x$have_mce" = "xyes")
- 
- ####################################################################
++
++####################################################################
  # Should we build GLib based unit tests
-Index: src/trackerd/Makefile.am
-===================================================================
---- src/trackerd/Makefile.am	(revision 36841)
-+++ src/trackerd/Makefile.am	(working copy)
+ ####################################################################
+ 
+diff --git a/src/trackerd/Makefile.am b/src/trackerd/Makefile.am
+index 6d5369c..c41eebe 100644
+--- a/src/trackerd/Makefile.am
++++ b/src/trackerd/Makefile.am
 @@ -27,12 +27,19 @@ if HAVE_INOTIFY
  inotify_libs = $(top_builddir)/src/libinotify/libinotify.la
  endif
@@ -72,10 +73,50 @@ Index: src/trackerd/Makefile.am
  	tracker-backup.h						\
  	tracker-backup.c						\
  	tracker-crawler.c						\
-Index: src/trackerd/tracker-mce.c
-===================================================================
---- src/trackerd/tracker-mce.c	(revision 0)
-+++ src/trackerd/tracker-mce.c	(revision 0)
+diff --git a/src/trackerd/tracker-main.c b/src/trackerd/tracker-main.c
+index f181549..99e47da 100644
+--- a/src/trackerd/tracker-main.c
++++ b/src/trackerd/tracker-main.c
+@@ -74,6 +74,10 @@
+ #include "tracker-backup.h"
+ #include "tracker-daemon.h"
+ 
++#ifdef HAVE_MCE
++#include "tracker-mce.h"
++#endif
++
+ #ifdef G_OS_WIN32
+ #include <windows.h>
+ #include <pthread.h>
+@@ -971,6 +975,12 @@ main (gint argc, gchar *argv[])
+ 			  NULL);
+ #endif /* HAVE_HAL */
+ 
++#ifdef HAVE_MCE
++	if (!tracker_mce_init ()) {
++		return EXIT_FAILURE;
++	}
++#endif /* HAVE_MCE */
++
+ 	tracker_status_init (config, hal);
+ 
+ 	tracker_module_config_init ();
+@@ -1134,6 +1144,10 @@ main (gint argc, gchar *argv[])
+ 	tracker_thumbnailer_shutdown ();
+ 	tracker_log_shutdown ();
+ 
++#ifdef HAVE_MCE
++	tracker_mce_shutdown ();
++#endif /* HAVE_MCE */
++
+ #ifdef HAVE_HAL
+ 	g_signal_handlers_disconnect_by_func (hal,
+ 					      mount_point_added_cb,
+diff --git a/src/trackerd/tracker-mce.c b/src/trackerd/tracker-mce.c
+new file mode 100644
+index 0000000..847293e
+--- /dev/null
++++ b/src/trackerd/tracker-mce.c
 @@ -0,0 +1,282 @@
 +/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 +/*
@@ -359,10 +400,11 @@ Index: src/trackerd/tracker-mce.c
 +{
 +	g_static_private_set (&private_key, NULL, NULL);
 +}
-Index: src/trackerd/tracker-mce.h
-===================================================================
---- src/trackerd/tracker-mce.h	(revision 0)
-+++ src/trackerd/tracker-mce.h	(revision 0)
+diff --git a/src/trackerd/tracker-mce.h b/src/trackerd/tracker-mce.h
+new file mode 100644
+index 0000000..04073d7
+--- /dev/null
++++ b/src/trackerd/tracker-mce.h
 @@ -0,0 +1,33 @@
 +/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 +/*
@@ -397,42 +439,3 @@ Index: src/trackerd/tracker-mce.h
 +G_END_DECLS
 +
 +#endif /* __TRACKERD_MCE_H__ */
-Index: src/trackerd/tracker-main.c
-===================================================================
---- src/trackerd/tracker-main.c	(revision 36841)
-+++ src/trackerd/tracker-main.c	(working copy)
-@@ -72,6 +72,10 @@
- #include "tracker-backup.h"
- #include "tracker-daemon.h"
- 
-+#ifdef HAVE_MCE
-+#include "tracker-mce.h"
-+#endif
-+
- #ifdef G_OS_WIN32
- #include <windows.h>
- #include <pthread.h>
-@@ -998,6 +1002,12 @@ main (gint argc, gchar *argv[])
- 			  NULL);
- #endif /* HAVE_HAL */
- 
-+#ifdef HAVE_MCE
-+	if (!tracker_mce_init ()) {
-+		return EXIT_FAILURE;
-+	}
-+#endif /* HAVE_MCE */
-+
- 	tracker_status_init (config, hal);
- 
- 	tracker_module_config_init ();
-@@ -1163,6 +1173,10 @@ main (gint argc, gchar *argv[])
- 	tracker_thumbnailer_shutdown ();
- 	tracker_log_shutdown ();
- 
-+#ifdef HAVE_MCE
-+	tracker_mce_shutdown ();
-+#endif /* HAVE_MCE */
-+
- #ifdef HAVE_HAL
- 	g_signal_handlers_disconnect_by_func (hal,
- 					      mount_point_added_cb,

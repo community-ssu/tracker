@@ -28,6 +28,8 @@
 #include "tracker-xmp.h"
 #include "tracker-main.h"
 
+#include <libtracker-common/tracker-utils.h>
+
 #ifdef HAVE_EXEMPI
 
 #include <exempi/xmp.h>
@@ -64,20 +66,19 @@ fix_flash (const gchar *flash)
 {
 	static const gint fired_mask = 0x1;
 	gint value;
-	value = atoi(flash);
+
+	value = atoi (flash);
+
 	if (value & fired_mask) {
 		return "1";
 	} else {
 		return "0";
 	}
-		
 }
 
 static gchar *
 fix_white_balance (const gchar *wb)
 {
-	gint value;
-	value = atoi(wb);
 	if (wb) {
 		return "Manual white balance";
 	} else {
@@ -260,6 +261,7 @@ tracker_xmp_iter_simple (GHashTable  *metadata,
 	if (strcmp (schema, NS_DC) == 0) {
 		if (strcmp (name, "title") == 0) {
 			tracker_append_string_to_hash_table (metadata, "Image:Title", value, append, FALSE);
+			tracker_append_string_to_hash_table (metadata, "Image:HasKeywords", "1", FALSE, FALSE);
 		}
 		else if (strcmp (name, "rights") == 0) {
 			tracker_append_string_to_hash_table (metadata, "File:Copyright", value, append, FALSE);
@@ -269,6 +271,7 @@ tracker_xmp_iter_simple (GHashTable  *metadata,
 		}
 		else if (strcmp (name, "description") == 0) {
 			tracker_append_string_to_hash_table (metadata, "Image:Description", value, append, FALSE);
+			tracker_append_string_to_hash_table (metadata, "Image:HasKeywords", "1", FALSE, FALSE);
 		}
 		else if (strcmp (name, "date") == 0) {
 			/* exempi considers this an array while we want a single value */
@@ -285,6 +288,7 @@ tracker_xmp_iter_simple (GHashTable  *metadata,
 			tracker_append_string_to_hash_table (metadata, "Image:Keywords", value, TRUE, FALSE);
 			tracker_append_string_to_hash_table (metadata, "Image:HasKeywords", "1", FALSE, FALSE);
 		}
+#ifdef ENABLE_DETAILED_METADATA
 		else if (strcmp (name, "publisher") == 0) {
 			tracker_append_string_to_hash_table (metadata, "DC:Publisher", value, append, FALSE);
 		}
@@ -312,7 +316,7 @@ tracker_xmp_iter_simple (GHashTable  *metadata,
 		else if (strcmp (name, "coverage") == 0) {
 			tracker_append_string_to_hash_table (metadata, "DC:Coverage", value, append, FALSE);
 		}
-
+#endif /* ENABLE_DETAILED_METADATA */
 	}
 	/* Creative Commons */
 	else if (strcmp (schema, NS_CC) == 0) {
@@ -331,6 +335,7 @@ tracker_xmp_iter_simple (GHashTable  *metadata,
 		else if (strcmp (name, "Artist") == 0) {
 			tracker_append_string_to_hash_table (metadata, "Image:Creator", value, append, FALSE);
 		}
+#ifdef ENABLE_DETAILED_METADATA
 		else if (strcmp (name, "Software") == 0) {
 			tracker_append_string_to_hash_table (metadata, "Image:Software", value, append, FALSE);
 		}
@@ -340,6 +345,7 @@ tracker_xmp_iter_simple (GHashTable  *metadata,
 		else if (strcmp (name, "Model") == 0) {
 			tracker_append_string_to_hash_table (metadata, "Image:CameraModel", value, append, FALSE);
 		}
+#endif /* ENABLE_DETAILED_METADATA */
 		else if (strcmp (name, "Orientation") == 0) {
 			tracker_append_string_to_hash_table (metadata, 
 							     "Image:Orientation", 
@@ -352,6 +358,7 @@ tracker_xmp_iter_simple (GHashTable  *metadata,
 							     fix_flash (value), 
 							     append, FALSE);
 		}
+#ifdef ENABLE_DETAILED_METADATA
 		else if (strcmp (name, "MeteringMode") == 0) {
 			tracker_append_string_to_hash_table (metadata, 
 							     "Image:MeteringMode", 
@@ -370,13 +377,16 @@ tracker_xmp_iter_simple (GHashTable  *metadata,
 		else if (strcmp (name, "FocalLength") == 0) {
 			tracker_append_string_to_hash_table (metadata, "Image:FocalLength", value, append, FALSE);
 		}
+#endif /* ENABLE_DETAILED_METADATA */
 		else if (strcmp (name, "ISOSpeedRatings") == 0) {
 			tracker_append_string_to_hash_table (metadata, "Image:ISOSpeed", value, append, FALSE);
 		}
+#ifdef ENABLE_DETAILED_METADATA
 		else if (strcmp (name, "WhiteBalance") == 0) {
 			tracker_append_string_to_hash_table (metadata, "Image:WhiteBalance",
 							     fix_white_balance (value), append, FALSE);
 		}
+#endif /* ENABLE_DETAILED_METADATA */
 		else if (strcmp (name, "Copyright") == 0) {
 			tracker_append_string_to_hash_table (metadata, "File:Copyright", value, append, FALSE);
 		}
@@ -397,14 +407,13 @@ tracker_xmp_iter_simple (GHashTable  *metadata,
 
 			/* Added to the valid keywords */
 		        tracker_append_string_to_hash_table (metadata, "Image:Keywords", value, TRUE, FALSE);
-			tracker_append_string_to_hash_table (metadata, "Image:HasKeywords", "1", FALSE, FALSE);
+
 		}
 		if (strcmp (name, "Sublocation") == 0) {
 		        tracker_append_string_to_hash_table (metadata, "Image:Sublocation", value, append, FALSE);
-			
+
 			/* Added to the valid keywords */
 		        tracker_append_string_to_hash_table (metadata, "Image:Keywords", value, TRUE, FALSE);
-			tracker_append_string_to_hash_table (metadata, "Image:HasKeywords", "1", FALSE, FALSE);
 		}
 	}
 	/* Photoshop scheme */
@@ -414,14 +423,12 @@ tracker_xmp_iter_simple (GHashTable  *metadata,
 
 			/* Added to the valid keywords */
 		        tracker_append_string_to_hash_table (metadata, "Image:Keywords", value, TRUE, FALSE);
-			tracker_append_string_to_hash_table (metadata, "Image:HasKeywords", "1", FALSE, FALSE);
 		}
 		else if (strcmp (name, "Country") == 0) {
 			tracker_append_string_to_hash_table (metadata, "Image:Country", value, append, FALSE);
 
 			/* Added to the valid keywords */
 		        tracker_append_string_to_hash_table (metadata, "Image:Keywords", value, TRUE, FALSE);
-			tracker_append_string_to_hash_table (metadata, "Image:HasKeywords", "1", FALSE, FALSE);			
 		}
 	}
 
@@ -449,7 +456,7 @@ tracker_xmp_iter (XmpPtr          xmp,
 		const gchar *value = xmp_string_cstr (the_prop);
 
 		if (XMP_IS_PROP_SIMPLE (opt)) {
-			if (strcmp (path,"") != 0) {
+			if (!tracker_is_empty_string (path)) {
 				if (XMP_HAS_PROP_QUALIFIERS (opt)) {
 					tracker_xmp_iter_simple_qual (xmp, metadata, schema, path, value, append);
 				} else {

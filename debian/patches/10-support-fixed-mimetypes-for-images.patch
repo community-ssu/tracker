@@ -1,0 +1,14 @@
+diff --git a/data/services/default.service b/data/services/default.service
+index 942997a..511ff89 100644
+--- a/data/services/default.service
++++ b/data/services/default.service
+@@ -81,8 +81,7 @@ KeyMetadata9=Image:Orientation
+ KeyMetadata10=Image:Software
+ TabularMetadata=File:Name;Image:Height;Image:Width;Image:Date;File:Modified;Image:Creator;Image:Software;
+ TileMetadata=Image:Title;Image:Height;Image:Width;Image:Date;Image:Creator;Image:Software;Image:Comments;
+-Mimes=application/vnd.oasis.opendocument.image;application/x-krita;sketch/png;
+-MimePrefixes=image/;
++Mimes=image/jpeg;image/png;image/gif;image/tiff;sketch/png;
+ ShowServiceFiles=true
+ ShowServiceDirectories=true
+ HasMetadata=true

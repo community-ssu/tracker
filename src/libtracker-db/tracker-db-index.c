@@ -839,6 +839,7 @@ index_flush_item (gpointer user_data)
 	}
 
 	if (priv->cache_layers && g_hash_table_size (priv->cache_layers->data) > 0) {
+		gboolean error = FALSE;
 		GTimer *timer;
 
 		timer = g_timer_new ();
@@ -850,6 +851,7 @@ index_flush_item (gpointer user_data)
 				g_hash_table_iter_remove (&iter);
 			} else {
 				emit_error_received (indez, _("Index corrupted"));
+				error = TRUE;
 				break;
 			}
 
@@ -860,7 +862,14 @@ index_flush_item (gpointer user_data)
 
 		g_timer_destroy (timer);
 
-		return TRUE;
+		if (!error) {
+			return TRUE;
+		} else {
+			set_in_flush (indez, FALSE);
+			priv->idle_flush_id = 0;
+
+			return FALSE;
+		}
 	} else {
 		GList *link;
 
@@ -1086,9 +1095,18 @@ tracker_db_index_flush_sync (TrackerDBIndex *indez)
 	}
 
 	for (cache = priv->cache_layers; cache; cache = cache->next) {
-		g_hash_table_foreach_remove (cache->data,
-					     (GHRFunc) indexer_update_word,
-					     priv->index);
+		GHashTableIter iter;
+		gpointer key, value;
+
+		g_hash_table_iter_init (&iter, cache->data);
+
+		while (g_hash_table_iter_next (&iter, &key, &value)) {
+			if (indexer_update_word (key, value, priv->index)) {
+				g_hash_table_iter_remove (&iter);
+			} else {
+				break;
+			}
+		}
 	}
 
 	g_list_foreach (priv->cache_layers, (GFunc) g_hash_table_destroy, NULL);
@@ -1238,7 +1256,7 @@ tracker_db_index_add_word (TrackerDBIndex *indez,
 	TrackerDBIndexItem     elem;
 	TrackerDBIndexItem    *current;
 	GArray		      *array;
-	guint		       i, new_score;
+	guint                  i;
 
 	g_return_if_fail (TRACKER_IS_DB_INDEX (indez));
 	g_return_if_fail (word != NULL);
@@ -1273,12 +1291,12 @@ tracker_db_index_add_word (TrackerDBIndex *indez,
 
 		if (current->id == service_id) {
 			guint32 serv_type;
+			gint64  new_score;
 
 			/* The word was already found in the same
 			 * service_id (file), modify score
 			 */
 			new_score = tracker_db_index_item_get_score (current) + weight;
-
 			serv_type = tracker_db_index_item_get_service_type (current);
 			current->amalgamated = tracker_db_index_item_calc_amalgamated (serv_type, new_score);
 

@@ -33,6 +33,7 @@
 #include <gst/tag/tag.h>
 
 #include <libtracker-common/tracker-type-utils.h>
+#include <libtracker-common/tracker-file-utils.h>
 
 #include "tracker-main.h"
 #include "tracker-extract-albumart.h"
@@ -85,6 +86,7 @@ typedef struct {
 
 	unsigned char  *album_art_data;
 	guint           album_art_size;
+	const gchar    *album_art_mime;
 
 } MetadataExtractor;
 
@@ -235,18 +237,63 @@ get_media_duration (MetadataExtractor *extractor)
 }
 
 static void
+get_embedded_album_art(MetadataExtractor *extractor)
+{
+	const GValue *value;
+	guint         lindex;
+
+	lindex = 0;
+
+	do {
+		value = gst_tag_list_get_value_index (extractor->tagcache, GST_TAG_IMAGE, lindex);
+
+		if (value) {
+			GstBuffer    *buffer;
+			GstCaps      *caps;
+			GstStructure *caps_struct;
+			gint          type;
+
+			buffer = gst_value_get_buffer (value);
+			caps   = gst_buffer_get_caps (buffer);
+			caps_struct = gst_caps_get_structure (buffer->caps, 0);
+
+			gst_structure_get_enum (caps_struct,
+						"image-type",
+						GST_TYPE_TAG_IMAGE_TYPE,
+						&type);
+
+			if ((type == GST_TAG_IMAGE_TYPE_FRONT_COVER)||
+			    ((type == GST_TAG_IMAGE_TYPE_UNDEFINED)&&(extractor->album_art_size == 0))) {
+				extractor->album_art_data = buffer->data;
+				extractor->album_art_size = buffer->size;
+				extractor->album_art_mime = gst_structure_get_name (caps_struct);
+				g_debug ("Mime was %s", extractor->album_art_mime);
+				return;
+			}
+
+			gst_object_unref (caps);
+
+			lindex++;
+		}
+	} while (value);
+}
+
+static void
 extract_metadata (MetadataExtractor *extractor,
 		  GHashTable        *metadata)
 {
 	gchar *value;
-	g_return_if_fail (extractor);
-	g_return_if_fail (metadata);
+
+	g_return_if_fail (extractor != NULL);
+	g_return_if_fail (metadata != NULL);
 
 	if (extractor->tagcache) {
 		/* General */
 		add_string_gst_tag (metadata, "File:Copyright", extractor->tagcache, GST_TAG_COPYRIGHT);
 		add_string_gst_tag (metadata, "File:License", extractor->tagcache, GST_TAG_LICENSE);
+#ifdef ENABLE_DETAILED_METADATA
 		add_string_gst_tag (metadata, "DC:Coverage", extractor->tagcache, GST_TAG_LOCATION);
+#endif /* ENABLE_DETAILED_METADATA */
 
 		/* Audio */
  		add_string_gst_tag (metadata, "Audio:Album", extractor->tagcache, GST_TAG_ALBUM);
@@ -254,13 +301,17 @@ extract_metadata (MetadataExtractor *extractor,
 		add_uint_gst_tag   (metadata, "Audio:TrackNo", extractor->tagcache, GST_TAG_TRACK_NUMBER);
 		add_uint_gst_tag   (metadata, "Audio:DiscNo", extractor->tagcache, GST_TAG_ALBUM_VOLUME_NUMBER);
 		add_string_gst_tag (metadata, "Audio:Performer", extractor->tagcache, GST_TAG_PERFORMER);
+#ifdef ENABLE_DETAILED_METADATA
 		add_double_gst_tag (metadata, "Audio:TrackGain", extractor->tagcache, GST_TAG_TRACK_GAIN);
 		add_double_gst_tag (metadata, "Audio:PeakTrackGain", extractor->tagcache, GST_TAG_TRACK_PEAK);
 		add_double_gst_tag (metadata, "Audio:AlbumGain", extractor->tagcache, GST_TAG_ALBUM_GAIN);
 		add_double_gst_tag (metadata, "Audio:AlbumPeakGain", extractor->tagcache, GST_TAG_ALBUM_PEAK);
+#endif /* ENABLE_DETAILED_METADATA */
 		add_y_date_gst_tag (metadata, "Audio:ReleaseDate", extractor->tagcache, GST_TAG_DATE);
 		add_string_gst_tag (metadata, "Audio:Genre", extractor->tagcache, GST_TAG_GENRE);
+#ifdef ENABLE_DETAILED_METADATA
 		add_string_gst_tag (metadata, "Audio:Codec", extractor->tagcache, GST_TAG_AUDIO_CODEC);
+#endif /* ENABLE_DETAILED_METADATA */
 
 		/* Video */
 		add_string_gst_tag (metadata, "Video:Codec", extractor->tagcache, GST_TAG_VIDEO_CODEC);
@@ -277,10 +328,13 @@ extract_metadata (MetadataExtractor *extractor,
 		} else if (extractor->mime == EXTRACT_MIME_AUDIO) {
 			add_string_gst_tag (metadata, "Audio:Title", extractor->tagcache, GST_TAG_TITLE);
 			add_string_gst_tag (metadata, "Audio:Artist", extractor->tagcache, GST_TAG_ARTIST);
+#ifdef ENABLE_DETAILED_METADATA
 			add_string_gst_tag (metadata, "Audio:Comment", extractor->tagcache, GST_TAG_COMMENT);
+#endif /* ENABLE_DETAILED_METADATA */
 		}
  	}
 
+#ifdef ENABLE_DETAILED_METADATA
 	if (extractor->audio_channels >= 0) {
 		add_uint_info (metadata,
 			       g_strdup ("Audio:Channels"),
@@ -292,6 +346,7 @@ extract_metadata (MetadataExtractor *extractor,
 			       g_strdup ("Audio:Samplerate"),
 			       extractor->audio_samplerate);
 	}
+#endif /* ENABLE_DETAILED_METADATA */
 
 	if (extractor->video_height >= 0) {
 		if (extractor->mime == EXTRACT_MIME_IMAGE) {
@@ -331,6 +386,8 @@ extract_metadata (MetadataExtractor *extractor,
  		if (extractor->duration >= 0) {
  			add_int64_info (metadata, g_strdup ("Audio:Duration"), extractor->duration);
  		}
+
+		get_embedded_album_art (extractor);
  	}
 
 	if (extractor->audiotags) {
@@ -348,7 +405,6 @@ extract_metadata (MetadataExtractor *extractor,
 					     "Audio:Genre");
 		}
 	}
-
 }
 
 static void
@@ -374,13 +430,10 @@ dbin_dpad_cb (GstElement* e, GstPad* pad, gboolean cont, gpointer data)
 	
 	g_value_init (&val, G_TYPE_INT);
 	g_value_set_int (&val, 50);
-
 	g_object_set_property (G_OBJECT (fsink), "preroll-queue-len", &val);
-
 	g_value_unset (&val);
 
 	extractor->fsinks = g_list_append (extractor->fsinks, fsink);
-	
 	gst_element_set_state (fsink, GST_STATE_PAUSED);
 	
 	gst_bin_add (GST_BIN (extractor->pipeline), fsink);
@@ -389,10 +442,9 @@ dbin_dpad_cb (GstElement* e, GstPad* pad, gboolean cont, gpointer data)
 	gst_object_unref (fsinkpad);
 }
 
-
-
 static void
-add_stream_tags_tagreadbin_for_element (MetadataExtractor *extractor, GstElement *elem)
+add_stream_tags_tagreadbin_for_element (MetadataExtractor *extractor, 
+					GstElement        *elem)
 {
 	GstStructure      *s         = NULL;
 	GstCaps	          *caps      = NULL;
@@ -405,10 +457,9 @@ add_stream_tags_tagreadbin_for_element (MetadataExtractor *extractor, GstElement
 	while (!done) {
 		switch (gst_iterator_next (iter, &item)) {
 		case GST_ITERATOR_OK:
-			
 			if ((caps = GST_PAD_CAPS (item))) {
 				s = gst_caps_get_structure (caps, 0);
-
+				
 				if (s) {
 					if (g_strrstr (gst_structure_get_name (s), "audio")) {
 						if ( ( (extractor->audio_channels != -1) &&
@@ -677,6 +728,10 @@ tracker_extract_gstreamer (const gchar *uri,
 	extractor->audiotags    = NULL;
 	extractor->videotags    = NULL;	
 
+	extractor->album_art_data = NULL;
+	extractor->album_art_size = 0;
+	extractor->album_art_mime = NULL;
+
 	extractor->duration = -1;
 	extractor->video_fps_n = extractor->video_fps_d = -1;
 	extractor->video_height = extractor->video_width = -1;
@@ -685,27 +740,27 @@ tracker_extract_gstreamer (const gchar *uri,
 	
 	extractor->pipeline = gst_element_factory_make ("pipeline", NULL);
 	if (!extractor->pipeline) {
-		g_error ("Failed to create pipeline");
-		return;
+		g_critical ("Failed to create GStreamer pipeline");
+		goto fail;
 	}
-	extractor->filesrc  = gst_element_factory_make ("filesrc",  NULL);
+	extractor->filesrc = gst_element_factory_make ("filesrc", NULL);
 	if (!extractor->filesrc) {
-		g_error ("Failed to create filesrc");
-		return;
+		g_critical ("Failed to create GStreamer filesrc");
+		goto fail;
 	}
 	if (use_cache) {
-		extractor->cache    = gst_element_factory_make ("cache",    NULL);
+		extractor->cache = gst_element_factory_make ("cache", NULL);
 		if (!extractor->cache) {
-			g_error ("Failed to create cache");
-			return;
+			g_critical ("Failed to create GStreamer cache");
+			goto fail;
 		}
 	}
 
 	if (use_dbin) {
 		extractor->bin = gst_element_factory_make ("decodebin2", "decodebin2");
 		if (!extractor->bin) {
-			g_error ("Failed to create decodebin");
-			return;
+			g_critical ("Failed to create GStreamer decodebin");
+			goto fail;
 		}
 		extractor->id = g_signal_connect (G_OBJECT (extractor->bin), 
 				       "new-decoded-pad",
@@ -714,8 +769,8 @@ tracker_extract_gstreamer (const gchar *uri,
 	} else {
 	        extractor->bin = gst_element_factory_make ("tagreadbin", "tagreadbin");
 		if (!extractor->bin) {
-			g_error ("Failed to create tagreadbin");
-			return;
+			g_error ("Failed to create GStreamer tagreadbin");
+			goto fail;
 		}
 		extractor->id = 0;
 	}
@@ -725,16 +780,16 @@ tracker_extract_gstreamer (const gchar *uri,
 
 	if (use_cache) {
 		gst_bin_add (GST_BIN (extractor->pipeline), extractor->cache);
-		if (! gst_element_link_many (extractor->filesrc, extractor->cache, extractor->bin, NULL)) {
-		g_error ("Can't link elements\n");
-		/* FIXME Clean up */
-		return;
+		if (!gst_element_link_many (extractor->filesrc, extractor->cache, extractor->bin, NULL)) {
+			g_critical ("Could not link GStreamer elements (using cache)");
+			/* FIXME Clean up */
+			goto fail;
 		}
 	} else {
 		if (!gst_element_link_many (extractor->filesrc, extractor->bin, NULL)) {
-			g_error ("Can't link elements\n");
+			g_critical ("Could not link GStreamer elements");
 			/* FIXME Clean up */
-			return;
+			goto fail;
 		}
 	}
 
@@ -753,13 +808,13 @@ tracker_extract_gstreamer (const gchar *uri,
 	/* Save embedded art */
 	if (extractor->album_art_data && extractor->album_art_size) {
 #ifdef HAVE_GDKPIXBUF
-		tracker_process_albumart (extractor->album_art_data, extractor->album_art_size,
+		tracker_process_albumart (extractor->album_art_data, extractor->album_art_size, extractor->album_art_mime,
 					  /* g_hash_table_lookup (metadata, "Audio:Artist") */ NULL,
 					  g_hash_table_lookup (metadata, "Audio:Album"),
 					  g_hash_table_lookup (metadata, "Audio:AlbumTrackCount"),
 					  uri);
 #else
-		tracker_process_albumart (NULL, 0,
+		tracker_process_albumart (NULL, 0, NULL,
 					  /* g_hash_table_lookup (metadata, "Audio:Artist") */ NULL,
 					  g_hash_table_lookup (metadata, "Audio:Album"),
 					  g_hash_table_lookup (metadata, "Audio:AlbumTrackCount"),
@@ -788,20 +843,24 @@ tracker_extract_gstreamer (const gchar *uri,
 	g_main_loop_unref (extractor->loop);
 	g_slice_free (MetadataExtractor, extractor);
 
+fail:
 	if (type == EXTRACT_MIME_IMAGE) {
+		/* We fallback to the file's modified time for the
+		 * "Image:Date" metadata if it doesn't exist.
+		 *
+		 * FIXME: This shouldn't be necessary.
+		 */
 		if (!g_hash_table_lookup (metadata, "Image:Date")) {
-			struct stat st;
+			gchar *date;
+			guint64 mtime;
 			
-			if (g_lstat (uri, &st) >= 0) {
-				gchar *date;
-				
-				date = tracker_date_to_string (st.st_mtime);
-				
-				g_hash_table_insert (metadata,
-						     g_strdup ("Image:Date"),
-						     tracker_escape_metadata (date));
-				g_free (date);
-			}
+			mtime = tracker_file_get_mtime (uri);
+			date = tracker_date_to_string ((time_t) mtime);
+			
+			g_hash_table_insert (metadata,
+					     g_strdup ("Image:Date"),
+					     tracker_escape_metadata (date));
+			g_free (date);
 		}
 	} else if (type == EXTRACT_MIME_VIDEO) {
 		if (!g_hash_table_lookup (metadata, "Video:Title")) {
@@ -836,7 +895,6 @@ tracker_extract_gstreamer (const gchar *uri,
 			g_free (title);
 		}
 	}
-
 }
 
 
