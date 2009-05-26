@@ -1,3 +1,14 @@
+tracker (0.6.95-1maemo1) stable; urgency=low
+
+  * Fixes: NB#112133, trackerd-11-1386.rcore.lzo crashed
+  * Fixes: NB#114082, Tracker source returns wrong metadata for attached...
+  * Fixes: NB#118003, OGG files listed in Mediaplayer
+  * Fixes indexer warnings closing contexts inserting with collated data
+  * Fixes MetadataValue so it can be empty to, avoid critical warnings
+  * Fixes play list duration handling
+
+ -- Martyn Russell <martyn@imendio.com>  Tue, 26 May 2009 14:00:00 +0000
+
 tracker (0.6.94-11maemo1) stable; urgency=low
 
   * Fixes: NB#110584, Image:HasKeywords cannot be used for ImageViewer...
