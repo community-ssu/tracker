@@ -1,6 +1,7 @@
 tracker (0.6.95-1maemo2) stable; urgency=low
 
   * Fixes regression after adding strict mime types for video ontology
+  * Fixes regression after adding strict mime types for audio ontology
 
  -- Martyn Russell <martyn@imendio.com>  Wed, 27 May 2009 10:30:00 +0000
 
