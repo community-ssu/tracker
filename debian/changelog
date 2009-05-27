@@ -1,3 +1,9 @@
+tracker (0.6.95-1maemo2) stable; urgency=low
+
+  * Fixes regression after adding strict mime types for video ontology
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 27 May 2009 10:30:00 +0000
+
 tracker (0.6.95-1maemo1) stable; urgency=low
 
   * Fixes: NB#112133, trackerd-11-1386.rcore.lzo crashed
