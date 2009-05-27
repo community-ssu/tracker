@@ -1,5 +1,5 @@
 diff --git a/data/services/default.service b/data/services/default.service
-index 942997a..9ae3c5a 100644
+index 942997a..719a81d 100644
 --- a/data/services/default.service
 +++ b/data/services/default.service
 @@ -111,8 +111,7 @@ KeyMetadata10=Audio:DateAdded
@@ -18,7 +18,7 @@ index 942997a..9ae3c5a 100644
  TileMetadata=Video:Title;Video:Author;Video:Height;Video:Width;Video:Duration;Video:Bitrate;
 -Mimes=application/vnd.rn-realmedia
 -MimePrefixes=video/;
-+Mimes=video/x-ms-video;video/avi;video/mpeg;video/x-mp4;video/mp4;video/3gpp;video/x-ms-wmv;video/x-ms-asf-plugin;
++Mimes=video/x-msvideo;video/avi;video/mpeg;video/x-mp4;video/mp4;video/3gpp;video/x-ms-wmv;video/x-ms-asf-plugin;
  ShowServiceFiles=true
  ShowServiceDirectories=true
  HasMetadata=true
