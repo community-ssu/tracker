@@ -1,5 +1,5 @@
 diff --git a/data/services/default.service b/data/services/default.service
-index 942997a..719a81d 100644
+index 942997a..24ff7cd 100644
 --- a/data/services/default.service
 +++ b/data/services/default.service
 @@ -111,8 +111,7 @@ KeyMetadata10=Audio:DateAdded
@@ -8,7 +8,7 @@ index 942997a..719a81d 100644
  TileMetadata=Audio:Title;Audio:Artist;Audio:Album;Audio:Genre;Audio:Duration;Audio:ReleaseDate;
 -Mimes=application/ogg;
 -MimePrefixes=audio/;
-+Mimes=audio/mpeg;audio/x-mp3;audio/x-mpeg;audio/mp3;audio/x-wav;audio/wav;audio/x-m4a;audio/x-mp2;audio/mp2;audio/x-amr;audio/AMR;audio/x-ms-wma;
++Mimes=audio/mpeg;audio/x-mp3;audio/x-mpeg;audio/mp3;audio/x-wav;audio/wav;audio/x-m4a;audio/x-mp2;audio/mp2;audio/x-amr;audio/AMR;audio/x-ms-wma;audio/basic;audio/mp4;
  ShowServiceFiles=true
  ShowServiceDirectories=true
  HasMetadata=true
@@ -18,7 +18,7 @@ index 942997a..719a81d 100644
  TileMetadata=Video:Title;Video:Author;Video:Height;Video:Width;Video:Duration;Video:Bitrate;
 -Mimes=application/vnd.rn-realmedia
 -MimePrefixes=video/;
-+Mimes=video/x-msvideo;video/avi;video/mpeg;video/x-mp4;video/mp4;video/3gpp;video/x-ms-wmv;video/x-ms-asf-plugin;
++Mimes=video/x-msvideo;video/avi;video/mpeg;video/x-mp4;video/mp4;video/3gpp;video/x-ms-wmv;video/x-ms-asf-plugin;video/quicktime;video/x-ms-asf;
  ShowServiceFiles=true
  ShowServiceDirectories=true
  HasMetadata=true
