@@ -41,6 +41,9 @@
 /* ZLib buffer settings */
 #define ZLIB_BUF_SIZE		      8192
 
+/* Required minimum space needed to create databases (5Mb) */
+#define TRACKER_DB_MIN_REQUIRED_SPACE 5242880
+
 /* Default memory settings for databases */
 #define TRACKER_DB_PAGE_SIZE_DONT_SET -1
 
@@ -335,7 +338,7 @@ save_pragma_file_defaults (gboolean safe)
 	g_key_file_set_string (key_file, group, "encoding", "\"UTF-8\"");
 	g_key_file_set_string (key_file, group, "journal_mode", "DELETE");
 	g_key_file_set_string (key_file, group, "synchronous", "NORMAL");
-	g_key_file_set_string (key_file, group, "temp_store", "FILE");
+	g_key_file_set_string (key_file, group, "temp_store", "MEMORY");
 	g_key_file_set_string (key_file, group, "auto_vacuum", "NONE");
 	g_key_file_set_string (key_file, group, "count_changes", "0");
 
@@ -1485,19 +1488,19 @@ db_set_params (TrackerDBInterface *iface,
 	if (pragmas) {
 		g_hash_table_iter_init (&iter, pragmas);
 		while (g_hash_table_iter_next (&iter, &key, &value)) {
-			tracker_db_interface_execute_query (iface,
-							    NULL,
-							    "PRAGMA %s = %s;",
-							    (const gchar*) key,
-							    (const gchar*) value);
+			TrackerDBResultSet *result_set;
+
+			result_set = tracker_db_interface_execute_query (iface,
+									 NULL,
+									 "PRAGMA %s = %s;",
+									 (const gchar*) key,
+									 (const gchar*) value);
+
+			if (result_set) {
+				g_object_unref (result_set);
+			}
 		}
 	}
-
-	/* tracker_db_interface_execute_query (iface, NULL, "PRAGMA synchronous = NORMAL;"); */
-	/* tracker_db_interface_execute_query (iface, NULL, "PRAGMA count_changes = 0;"); */
-	/* tracker_db_interface_execute_query (iface, NULL, "PRAGMA temp_store = FILE;"); */
-	/* tracker_db_interface_execute_query (iface, NULL, "PRAGMA encoding = \"UTF-8\""); */
-	/* tracker_db_interface_execute_query (iface, NULL, "PRAGMA auto_vacuum = 0;"); */
 
 	if (page_size != TRACKER_DB_PAGE_SIZE_DONT_SET) {
 		g_message ("  Setting page size to %d", page_size);
@@ -2136,7 +2139,7 @@ tracker_db_manager_ensure_locale (void)
 	g_free (stored_locale);
 }
 
-void
+gboolean
 tracker_db_manager_init (TrackerDBManagerFlags	flags,
 			 gboolean	       *first_time,
 			 gboolean	        shared_cache)
@@ -2153,7 +2156,7 @@ tracker_db_manager_init (TrackerDBManagerFlags	flags,
 	}
 
 	if (initialized) {
-		return;
+		return TRUE;
 	}
 
 	need_reindex = FALSE;
@@ -2249,6 +2252,16 @@ tracker_db_manager_init (TrackerDBManagerFlags	flags,
 			g_message ("Could not find database file:'%s'", dbs[i].abs_filename);
 			g_message ("One or more database files are missing, a reindex will be forced");
 			need_reindex = TRUE;
+		} else if (i == TRACKER_DB_COMMON) {
+			guint64 mtime, services_dir_mtime;
+
+			mtime = tracker_file_get_mtime (dbs[i].abs_filename);
+			services_dir_mtime = tracker_file_get_mtime (services_dir);
+
+			if (mtime < services_dir_mtime) {
+				g_message ("Ontology is more recent than DB cache, a reindex will be forced");
+				need_reindex = TRUE;
+			}
 		}
 	}
 
@@ -2257,7 +2270,7 @@ tracker_db_manager_init (TrackerDBManagerFlags	flags,
 	 */
 	if ((flags & TRACKER_DB_MANAGER_REMOVE_ALL) != 0) {
 		initialized = TRUE;
-		return;
+		return TRUE;
 	}
 
 	/* Set general database options */
@@ -2279,6 +2292,10 @@ tracker_db_manager_init (TrackerDBManagerFlags	flags,
 	if (flags & TRACKER_DB_MANAGER_FORCE_REINDEX || need_reindex) {
 		if (first_time) {
 			*first_time = TRUE;
+		}
+
+		if (!tracker_file_system_has_enough_space (data_dir, TRACKER_DB_MIN_REQUIRED_SPACE)) {
+			return FALSE;
 		}
 
 		/* We call an internal version of this function here
@@ -2340,6 +2357,8 @@ tracker_db_manager_init (TrackerDBManagerFlags	flags,
 	tracker_db_manager_ensure_locale ();
 
 	initialized = TRUE;
+
+	return TRUE;
 }
 
 void

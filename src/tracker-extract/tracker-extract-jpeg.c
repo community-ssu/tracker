@@ -134,7 +134,10 @@ static TagType tags[] = {
 #ifdef HAVE_LIBEXIF
 
 static void
-metadata_append (GHashTable *metadata, gchar *key, gchar *value, gboolean append)
+metadata_append (GHashTable  *metadata,
+		 const gchar *key,
+		 const gchar *value,
+		 gboolean     append)
 {
 	gchar   *new_value;
 	gchar   *orig;
@@ -311,14 +314,14 @@ read_exif (const unsigned char *buffer,
 				str = (*p->post) (buffer);
 
 				metadata_append (metadata,
-						 g_strdup (p->name),
-						 tracker_escape_metadata (str),
+						 p->name,
+						 str,
 						 p->multi);
 				g_free (str);
 			} else {
 				metadata_append (metadata,
-						 g_strdup (p->name),
-						 tracker_escape_metadata (buffer),
+						 p->name,
+						 buffer,
 						 p->multi);
 			}
 		}
@@ -384,7 +387,7 @@ extract_jpeg (const gchar *filename,
 		 *
 		 * jpeg_calc_output_dimensions(&cinfo);
 		 */
-		
+
 		marker = (struct jpeg_marker_struct *) &cinfo.marker_list;
 		
 		while (marker) {

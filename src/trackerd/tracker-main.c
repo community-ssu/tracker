@@ -519,9 +519,13 @@ initialize_directories (void)
 static gboolean
 initialize_databases (void)
 {
-	/*
-	 * Create SQLite databases
+	/* This means we doing the initial check that our dbs are up
+	 * to date. Once we get finished from the indexer, we set
+	 * this to FALSE.
 	 */
+	tracker_status_set_is_initial_check (TRUE);
+
+	/* We set our first time indexing state here */
 	if (!tracker_status_get_is_readonly () && force_reindex) {
 		tracker_status_set_is_first_time_index (TRUE);
 	}
@@ -594,7 +598,9 @@ backup_user_metadata (TrackerConfig *config, TrackerLanguage *language)
 	/*
 	 *  Init the DB stack to get the user metadata
 	 */
-	tracker_db_manager_init (0, &is_first_time_index, TRUE);
+	if (!tracker_db_manager_init (0, &is_first_time_index, TRUE)) {
+		return;
+	}
 
 	/*
 	 * If some database is missing or the dbs dont exists, we dont need
@@ -630,19 +636,18 @@ backup_user_metadata (TrackerConfig *config, TrackerLanguage *language)
  * Saving the last backup file to help with debugging.
  */
 static void
-crawling_finished_cb (TrackerProcessor *processor, 
+processor_finished_cb (TrackerProcessor *processor, 
 		      gpointer          user_data)
 {
 	GError *error = NULL;
-	static gint counter = 0;
 	
-	if (++counter >= 2) {
+	if (!tracker_status_get_is_initial_check ()) {
 		gchar *rebackup;
 
-		g_debug ("Uninstalling initial crawling callback");
+		g_debug ("Uninstalling initial processor finished callback");
 
 		g_signal_handlers_disconnect_by_func (processor, 
-						      crawling_finished_cb, 
+						      processor_finished_cb, 
 						      user_data);
 
 		if (g_file_test (get_ttl_backup_filename (), G_FILE_TEST_EXISTS)) {
@@ -662,9 +667,6 @@ crawling_finished_cb (TrackerProcessor *processor,
 			g_rename (get_ttl_backup_filename (), rebackup);
 			g_free (rebackup);
 		}
-
-	} else {
-		g_debug ("%d finished signal", counter);
 	}
 }
 
@@ -770,9 +772,15 @@ mount_point_set_cb (DBusGProxy *proxy,
 	 * processor checks state and at the time, we are PAUSED which
 	 * causes us state machine problems. 
 	 *
+	 * We check the processor is created here because there is a
+	 * race condition where the processor isn't created yet and we
+	 * tell it about added/removed mount points. It will
+	 * automatically find those out when it is created, it is only
+	 * needed here for AFTER it is created.
+	 *
 	 * This is the easiest way to do it.
 	 */
-	if (!mpu->no_crawling) {
+	if (!mpu->no_crawling && private->processor) {
 		if (mpu->was_added) {
 			tracker_processor_mount_point_added (private->processor,
 							     mpu->udi,
@@ -1107,14 +1115,17 @@ main (gint argc, gchar *argv[])
 		flags |= TRACKER_DB_MANAGER_LOW_MEMORY_MODE;
 	}
 
-	tracker_db_manager_init (flags, &is_first_time_index, TRUE);
-	tracker_status_set_is_first_time_index (is_first_time_index);
+	if (!tracker_db_manager_init (flags, &is_first_time_index, TRUE)) {
+		return EXIT_FAILURE;
+	}
 
 	if (!tracker_db_index_manager_init (index_flags,
 					    tracker_config_get_min_bucket_count (config),
 					    tracker_config_get_max_bucket_count (config))) {
 		return EXIT_FAILURE;
 	}
+
+	tracker_status_set_is_first_time_index (is_first_time_index);
 
 	/*
 	 * Check instances running
@@ -1178,12 +1189,12 @@ main (gint argc, gchar *argv[])
 	 * Start public interfaces (DBus, push modules, etc)
 	 */
 	private->processor = tracker_processor_new (config, hal);
-		
+
 	if (force_reindex &&
 	    g_file_test (get_ttl_backup_filename (), G_FILE_TEST_EXISTS)) {
 		g_debug ("Setting callback for crawling finish detection");
 		g_signal_connect (private->processor, "finished", 
-				  G_CALLBACK (crawling_finished_cb), 
+				  G_CALLBACK (processor_finished_cb), 
 				  NULL);
 	}
 
