@@ -1,5 +1,6 @@
 tracker (0.6.95-2maemo1~unreleased) stable; urgency=low
 
+  * Fixes: NB#119123, tracker-indexer is crashing.
   * Fixes: NB#110584, Image:HasKeywords cannot be used for ImageViewer...
   * Fixes: NB#100123, Image:Date is empty for some of the images	
   * Fixes: NB#119507, got glib message while running tracker-unique
