@@ -1,5 +1,6 @@
-tracker (0.6.95-2maemo1~unreleased) stable; urgency=low
+tracker (0.6.95-2maemo1) stable; urgency=low
 
+  * Fixes: NB#118578, Getting metadata with mafw_playlist_get_items_md...
   * Fixes: NB#119123, tracker-indexer is crashing.
   * Fixes: NB#110584, Image:HasKeywords cannot be used for ImageViewer...
   * Fixes: NB#100123, Image:Date is empty for some of the images	
@@ -8,6 +9,7 @@ tracker (0.6.95-2maemo1~unreleased) stable; urgency=low
   * Moved 31tracker to 14tracker, so it is started earlier on boot
   * Fixes critical warning with tracker_processor_mount_point_added()
   * Fixes crashing while creating DBs due to no disk space
+  * Fixes crashing in trackerd when started in readonly mode
   * Fixes 2 JPEG extractor memory leaks
   * Fixes 1 pragma memory leak in tracker-db-manager
   * Adds File:Added metadata field representing DB insertion time
@@ -18,7 +20,7 @@ tracker (0.6.95-2maemo1~unreleased) stable; urgency=low
   * Reduces debugging and logging
   * Reworks the TrackerProcessor for tracker_status_get_is_initial_check()
 
- -- Martyn Russell <martyn@imendio.com>  Mon,  1 June 2009 13:00:00 +0000
+ -- Martyn Russell <martyn@imendio.com>  Mon,  1 June 2009 17:30:00 +0000
 
 tracker (0.6.95-1maemo2) stable; urgency=low
 
