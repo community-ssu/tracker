@@ -16,31 +16,3 @@ index b539584..6628683 100644
  	if (!device_file) {
  		return FALSE;
  	}
-@@ -1087,6 +1094,7 @@ tracker_hal_get_mounted_directory_roots (TrackerHal *hal)
- {
- 	TrackerHalPriv *priv;
- 	GetRoots	gr;
-+	GList          *l;
- 
- 	g_return_val_if_fail (TRACKER_IS_HAL (hal), NULL);
- 
-@@ -1099,6 +1107,19 @@ tracker_hal_get_mounted_directory_roots (TrackerHal *hal)
- 			      hal_get_mount_point_by_udi_foreach,
- 			      &gr);
- 
-+	/* Hack for Maemo because now we are using /home/user/MyDocs
-+	 * as one of the MMCs and we don't want to crawl it twice.
-+	 */
-+	l = g_list_find_custom (gr.roots, 
-+				"/home/user/MyDocs",
-+				(GCompareFunc) strcmp);
-+	if (l) {
-+		/* Remove from list we just created */
-+		gr.roots = g_list_remove_link (gr.roots, l);
-+		g_free (l->data);
-+		g_list_free_1 (l);
-+	}
-+
- 	return gr.roots;
- }
- 
