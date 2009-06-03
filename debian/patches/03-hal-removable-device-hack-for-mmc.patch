@@ -1,8 +1,8 @@
 diff --git a/src/libtracker-common/tracker-hal.c b/src/libtracker-common/tracker-hal.c
-index b539584..6628683 100644
+index b6942d3..dc5f763 100644
 --- a/src/libtracker-common/tracker-hal.c
 +++ b/src/libtracker-common/tracker-hal.c
-@@ -604,6 +604,13 @@ hal_device_is_removable (TrackerHal  *hal,
+@@ -732,6 +732,13 @@ hal_device_is_removable (TrackerHal  *hal,
  	LibHalDrive	*drive;
  	gboolean	 removable;
  
@@ -16,3 +16,17 @@ index b539584..6628683 100644
  	if (!device_file) {
  		return FALSE;
  	}
+@@ -903,6 +910,13 @@ hal_device_add (TrackerHal   *hal,
+ 		return TRUE;
+ 	}
+ 
++	/* Ignore /home partition for the maemo platform */
++	if (mount_point &&
++	    (strcmp (mount_point, "/home") == 0 ||
++	     strcmp (mount_point, "/home/") == 0)) {
++		return TRUE;
++	}
++
+ 	/* Make sure we watch changes to the mount/umount state */
+ 	libhal_device_add_property_watch (priv->context, udi, &error);
+ 
