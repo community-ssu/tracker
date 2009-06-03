@@ -220,6 +220,7 @@ static gchar		  *sys_tmp_dir;
 static gpointer		   db_type_enum_class_pointer;
 static TrackerDBInterface *file_iface;
 static TrackerDBInterface *email_iface;
+static GList              *not_owned_ifaces = NULL;
 
 static const gchar *
 location_to_directory (TrackerDBLocation location)
@@ -237,13 +238,12 @@ location_to_directory (TrackerDBLocation location)
 }
 
 static gboolean
-load_pragma_file (gboolean safe)
+load_pragma_file (const gchar *profile_name)
 {
 	GKeyFile      *key_file = NULL;
 	GError        *error = NULL;
 	GStrv          keys;
 	gchar	      *pragma_file;
-	const gchar   *group;
 	gint           i;
 
 	if (pragmas) {
@@ -258,9 +258,13 @@ load_pragma_file (gboolean safe)
 	key_file = g_key_file_new ();
 	pragma_file = g_build_filename (config_dir, "sqlite-db.pragmas", NULL);
 
-	g_message ("Loading pragma file:'%s' using %s values", 
+	if (!profile_name) {
+		profile_name = "Safe";
+	}
+
+	g_message ("Loading pragma file:'%s' using profile '%s'",
 		   pragma_file,
-		   safe ? "safe" : "fast");
+		   profile_name);
 
 	if (!g_key_file_load_from_file (key_file, pragma_file, G_KEY_FILE_NONE, &error)) {
 		g_message ("  Couldn't load pragma file, %s", 
@@ -272,22 +276,21 @@ load_pragma_file (gboolean safe)
 
 		g_message ("  Trying to re-create file with defaults"); 
 
-		save_pragma_file_defaults (safe);
-		return load_pragma_file (safe);
+		save_pragma_file_defaults (TRUE);
+		return load_pragma_file (NULL);
 	}
 
-	if (safe) {
-		group = "Safe";
-	} else {
-		group = "Fast";
+	if (!g_key_file_has_group (key_file, profile_name)) {
+		g_warning ("  Profile '%s' does not exist, stepping back to 'Safe'", profile_name);
+		profile_name = "Safe";
 	}
 
-	keys = g_key_file_get_keys (key_file, group, NULL, NULL);
+	keys = g_key_file_get_keys (key_file, profile_name, NULL, NULL);
 
 	for (i = 0; keys[i]; i++) {
 		gchar *value;
 
-		value = g_key_file_get_string (key_file, group, keys[i], NULL);
+		value = g_key_file_get_string (key_file, profile_name, keys[i], NULL);
 		g_hash_table_insert (pragmas, g_strdup (keys[i]), value);
 
 		g_message ("  Adding pragma '%s' with value '%s'", 
@@ -2142,7 +2145,8 @@ tracker_db_manager_ensure_locale (void)
 gboolean
 tracker_db_manager_init (TrackerDBManagerFlags	flags,
 			 gboolean	       *first_time,
-			 gboolean	        shared_cache)
+			 gboolean	        shared_cache,
+			 const gchar           *profile_name)
 {
 	GType		    etype;
 	TrackerDBVersion    version;
@@ -2283,8 +2287,8 @@ tracker_db_manager_init (TrackerDBManagerFlags	flags,
 	load_prepared_queries ();
 
 	/* Get pragma details */
-	load_pragma_file (TRUE);
-	
+	load_pragma_file (profile_name);
+
 	/* Should we reindex? If so, just remove all databases files,
 	 * NOT the paths, note, that these paths are also used for
 	 * other things like the nfs lock file.
@@ -2361,6 +2365,23 @@ tracker_db_manager_init (TrackerDBManagerFlags	flags,
 	return TRUE;
 }
 
+static void
+invalidate_ifaces (void)
+{
+	GList *l;
+	gint i;
+
+	for (i = 1; i < G_N_ELEMENTS (dbs); i++) {
+		if (dbs[i].iface) {
+			g_signal_emit_by_name (dbs[i].iface, "invalidated");
+		}
+	}
+
+	for (l = not_owned_ifaces; l; l = l->next) {
+		g_signal_emit_by_name (l->data, "invalidated");
+	}
+}
+
 void
 tracker_db_manager_shutdown (void)
 {
@@ -2369,6 +2390,8 @@ tracker_db_manager_shutdown (void)
 	if (!initialized) {
 		return;
 	}
+
+	invalidate_ifaces ();
 
 	for (i = 1; i < G_N_ELEMENTS (dbs); i++) {
 		if (dbs[i].abs_filename) {
@@ -2426,6 +2449,9 @@ tracker_db_manager_shutdown (void)
 	tracker_ontology_shutdown ();
 
 	initialized = FALSE;
+
+	g_list_free (not_owned_ifaces);
+	not_owned_ifaces = NULL;
 }
 
 void
@@ -2481,6 +2507,13 @@ tracker_db_manager_get_file (TrackerDB db)
 	return dbs[db].abs_filename;
 }
 
+static void
+remove_not_owned_iface (gpointer  user_data,
+			GObject  *iface)
+{
+	not_owned_ifaces = g_list_remove (not_owned_ifaces, iface);
+}
+
 /**
  * tracker_db_manager_get_db_interfaces:
  * @num: amount of TrackerDB files wanted
@@ -2526,6 +2559,11 @@ tracker_db_manager_get_db_interfaces (gint num, ...)
 	}
 	va_end (args);
 
+	if (connection) {
+		not_owned_ifaces = g_list_prepend (not_owned_ifaces, connection);
+		g_object_weak_ref (G_OBJECT (connection), remove_not_owned_iface, NULL);
+	}
+
 	return connection;
 }
 
@@ -2559,6 +2597,11 @@ tracker_db_manager_get_db_interfaces_ro (gint num, ...)
 
 	}
 	va_end (args);
+
+	if (connection) {
+		not_owned_ifaces = g_list_prepend (not_owned_ifaces, connection);
+		g_object_weak_ref (G_OBJECT (connection), remove_not_owned_iface, NULL);
+	}
 
 	return connection;
 }

@@ -27,6 +27,8 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include <libtracker-db/tracker-db-manager.h>
+
 #include "tracker-status.h"
 #include "tracker-dbus.h"
 #include "tracker-daemon.h"
@@ -43,7 +45,10 @@
 typedef struct {
 	TrackerStatus  status;
 	TrackerStatus  status_before_paused;
-	gpointer       type_class;
+	gpointer       status_type_class;
+
+	TrackerMode    mode;
+	gpointer       mode_type_class;
 
 	guint          disk_space_check_id;
 
@@ -117,8 +122,12 @@ private_free (gpointer data)
 	g_object_unref (private->hal);
 #endif
 
-	if (private->type_class) {
-		g_type_class_unref (private->type_class);
+	if (private->status_type_class) {
+		g_type_class_unref (private->status_type_class);
+	}
+
+	if (private->mode_type_class) {
+		g_type_class_unref (private->mode_type_class);
 	}
 
 	dbus_g_proxy_disconnect_signal (private->indexer_proxy, "Continued",
@@ -373,6 +382,70 @@ disk_space_check_stop (void)
 	}
 }
 
+static void
+mode_check (void)
+{
+	TrackerDBManagerFlags flags = 0;
+	TrackerStatusPrivate *private;
+	TrackerMode           new_mode;
+	const gchar          *new_mode_str;
+	GError               *error = NULL;
+
+	private = g_static_private_get (&private_key);
+	g_return_if_fail (private != NULL);
+
+	new_mode = private->mode;
+
+	if (private->is_paused_for_batt ||
+	    private->is_paused_for_space) {
+		new_mode = TRACKER_MODE_SAFE;
+	} else {
+		new_mode = TRACKER_MODE_FAST;
+	}
+
+	if (new_mode == private->mode) {
+		return;
+	}
+
+	new_mode_str = tracker_mode_to_string (new_mode);
+
+	g_message ("Mode change from '%s' --> '%s'",
+		   tracker_mode_to_string (private->mode),
+		   new_mode_str);
+
+
+	private->mode = new_mode;
+
+	/* Tell the indexer to switch profile */
+	org_freedesktop_Tracker_Indexer_set_profile (private->indexer_proxy,
+						     new_mode_str,
+						     &error);
+
+	if (G_UNLIKELY (error)) {
+		g_critical ("Could not change profile in the indexer: %s\n",
+			    error->message);
+		g_error_free (error);
+
+		return;
+	}
+
+	if (tracker_config_get_low_memory_mode (private->config)) {
+		flags |= TRACKER_DB_MANAGER_LOW_MEMORY_MODE;
+	}
+
+	/* Now reinitialize DBs ourselves */
+	tracker_db_manager_shutdown ();
+
+	if (!tracker_db_manager_init (flags, NULL, TRUE, new_mode_str)) {
+		g_critical ("Could not restart DB Manager, trying again with defaults");
+
+		if (!tracker_db_manager_init (flags, NULL, TRUE, NULL)) {
+			g_critical ("Not even defaults worked, bailing out");
+			g_assert_not_reached ();
+		}
+	}
+}
+
 #ifdef HAVE_HAL
 
 static void
@@ -506,6 +579,8 @@ tracker_status_init (TrackerConfig *config,
 	private->status = TRACKER_STATUS_INITIALIZING;
 	private->status_before_paused = private->status;
 
+	private->mode = TRACKER_MODE_SAFE;
+
 	/* Since we don't reference this enum anywhere, we do
 	 * it here to make sure it exists when we call
 	 * g_type_class_peek(). This wouldn't be necessary if
@@ -516,7 +591,10 @@ tracker_status_init (TrackerConfig *config,
 	 * this is acceptable.
 	 */
 	type = tracker_status_get_type ();
-	private->type_class = g_type_class_ref (type);
+	private->status_type_class = g_type_class_ref (type);
+
+	type = tracker_mode_get_type ();
+	private->mode_type_class = g_type_class_ref (type);
 
 	private->config = g_object_ref (config);
 
@@ -743,13 +821,28 @@ void
 tracker_status_set (TrackerStatus new_status)
 {
 	TrackerStatusPrivate *private;
+	gboolean              should_be_paused;
+	gboolean              invalid_new_state;
 
 	private = g_static_private_get (&private_key);
 	g_return_if_fail (private != NULL);
 
-	g_message ("State change from '%s' --> '%s'",
+	should_be_paused =  
+		private->is_paused_manually ||
+		private->is_paused_for_batt || 
+		private->is_paused_for_io ||
+		private->is_paused_for_space ||
+		private->is_paused_for_dbus ||
+		private->is_paused_for_unknown;
+
+	invalid_new_state = 
+		should_be_paused && 
+		new_status != TRACKER_STATUS_PAUSED;
+
+	g_message ("State change from '%s' --> '%s' %s",
 		   tracker_status_to_string (private->status),
-		   tracker_status_to_string (new_status));
+		   tracker_status_to_string (new_status),
+		   invalid_new_state ? "attempted with pause conditions, doing nothing" : "");
 
 	/* Don't set previous status to the same as we are now,
 	 * otherwise we could end up setting PAUSED and our old state
@@ -768,29 +861,32 @@ tracker_status_set (TrackerStatus new_status)
 
 	/* State machine */
 	if (private->status != new_status) {
-		/* If we are paused but have been moved OUT of state
-		 * by some call, we set back to the state BEFORE we
-		 * were PAUSED. We only do this for IDLE so far.
+		/* The reason we have this check, is that it is
+		 * possible that we are trying to set our state to
+		 * IDLE after finishing crawling but actually, we
+		 * should be in a PAUSED state due to another flag,
+		 * such as low disk space. So we force PAUSED state.
+		 * However, the interesting thing here is, we must
+		 * remember to set the OLD state so we go back to the
+		 * state as set by the caller. If we don't we end up
+		 * going back to PENDING/WATCHING instead of IDLE when
+		 * we come out of being PAUSED.
 		 *
-		 * The reason is in part explained above with states
-		 * A, B and C. If we return to IDLE because we were
-		 * PENDING/WATCHING previously we need to move back to
-		 * PAUSED here otherwise we risk actually processing
-		 * files with no disk space.
-		 *
-		 * NOTE: We correct the state here if we are paused
-		 * for some reason like being out of space and we
-		 * attempt to go into an IDLE state. 
+		 * FIXME: Should we ONLY cater for IDLE here? -mr
 		 */
-		if (new_status == TRACKER_STATUS_IDLE && 
-		    (private->is_paused_manually ||
-		     private->is_paused_for_batt || 
-		     private->is_paused_for_io ||
-		     private->is_paused_for_space ||
-		     private->is_paused_for_dbus ||
-		     private->is_paused_for_unknown)) {
-			g_message ("Attempt to set state to IDLE with pause conditions, changing...");
-			tracker_status_set (TRACKER_STATUS_PAUSED);
+		if (invalid_new_state) {
+			g_message ("Attempt to set state to '%s' with pause conditions, doing nothing",
+				   tracker_status_to_string (new_status));
+
+			if (private->status != TRACKER_STATUS_PAUSED) {
+				tracker_status_set (TRACKER_STATUS_PAUSED);
+			} 
+
+			/* Set last state so we know what to return
+			 * to when we come out of PAUSED 
+			 */
+			private->status_before_paused = new_status;
+
 			return;
 		}
 
@@ -1097,6 +1193,7 @@ tracker_status_set_is_paused_manually (gboolean value)
 
 	/* Set indexer state and our state to paused or not */ 
 	indexer_recheck (TRUE, FALSE, emit);
+	mode_check ();
 }
 
 gboolean
@@ -1125,6 +1222,7 @@ tracker_status_set_is_paused_for_batt (gboolean value)
 
 	/* Set indexer state and our state to paused or not */ 
 	indexer_recheck (TRUE, FALSE, emit);
+	mode_check ();
 }
 
 gboolean
@@ -1153,6 +1251,7 @@ tracker_status_set_is_paused_for_io (gboolean value)
 
 	/* Set indexer state and our state to paused or not */ 
 	indexer_recheck (TRUE, FALSE, emit);
+	mode_check ();
 }
 
 gboolean
@@ -1181,6 +1280,7 @@ tracker_status_set_is_paused_for_space (gboolean value)
 
 	/* Set indexer state and our state to paused or not */ 
 	indexer_recheck (TRUE, FALSE, emit);
+	mode_check ();
 }
 
 gboolean
@@ -1209,4 +1309,60 @@ tracker_status_set_is_paused_for_dbus (gboolean value)
 
 	/* Set indexer state and our state to paused or not */ 
 	indexer_recheck (TRUE, TRUE, emit);
+	mode_check ();
+}
+
+/*
+ * Modes
+ */
+
+GType
+tracker_mode_get_type (void)
+{
+	static GType type = 0;
+
+	if (type == 0) {
+		static const GEnumValue values[] = {
+			{ TRACKER_MODE_SAFE,
+			  "TRACKER_MODE_SAFE",
+			  "Safe" },
+			{ TRACKER_MODE_FAST,
+			  "TRACKER_MODE_FAST",
+			  "Fast" },
+			{ 0, NULL, NULL }
+		};
+
+		type = g_enum_register_static ("TrackerMode", values);
+	}
+
+	return type;
+}
+
+const gchar *
+tracker_mode_to_string (TrackerMode mode)
+{
+	GType	    type;
+	GEnumClass *enum_class;
+	GEnumValue *enum_value;
+
+	type = tracker_mode_get_type ();
+	enum_class = G_ENUM_CLASS (g_type_class_peek (type));
+	enum_value = g_enum_get_value (enum_class, mode);
+
+	if (!enum_value) {
+		enum_value = g_enum_get_value (enum_class, TRACKER_MODE_SAFE);
+	}
+
+	return enum_value->value_nick;
+}
+
+TrackerMode
+tracker_mode_get (void)
+{
+	TrackerStatusPrivate *private;
+
+	private = g_static_private_get (&private_key);
+	g_return_val_if_fail (private != NULL, TRACKER_MODE_SAFE);
+
+	return private->mode;
 }
