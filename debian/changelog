@@ -1,3 +1,16 @@
+tracker (0.6.95-3maemo1) stable; urgency=low
+
+  * Fixes: GB#584547, Hungarian stopwords files encoding is bad
+  * Fixes state machine which could get stuck in PENDING state
+  * Fixes processor so we don't miss every OTHER device.
+  * Added tagreadbin use for GStreamer extractions, much faster
+  * Added "Fast" and "Safe" modes, "Fast" is REALLY fast.
+  * Updated patch 03 to now ignore /home MMC.
+  * Updated patch 02 to now not include /home/user/MyDocs as duplicate
+  * Added TrackerDBInterface invalidation scheme.
+	
+ -- Martyn Russell <martyn@imendio.com>  Thu,  4 June 2009 12:00:00 +0000
+
 tracker (0.6.95-2maemo1) stable; urgency=low
 
   * Fixes: NB#118578, Getting metadata with mafw_playlist_get_items_md...
