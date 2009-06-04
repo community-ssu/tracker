@@ -1,5 +1,5 @@
 diff --git a/src/libtracker-common/tracker-config.c b/src/libtracker-common/tracker-config.c
-index c0dfbf3..e047648 100644
+index c0dfbf3..6bf4cee 100644
 --- a/src/libtracker-common/tracker-config.c
 +++ b/src/libtracker-common/tracker-config.c
 @@ -73,7 +73,7 @@
@@ -30,7 +30,7 @@ index c0dfbf3..e047648 100644
  
  typedef struct _TrackerConfigPrivate TrackerConfigPrivate;
  
-@@ -755,8 +755,21 @@ config_create_with_defaults (GKeyFile *key_file,
+@@ -755,14 +755,25 @@ config_create_with_defaults (GKeyFile *key_file,
  			     gboolean  overwrite)
  {
  	gchar	     *language;
@@ -53,7 +53,13 @@ index c0dfbf3..e047648 100644
  
  	/* Get default values */
  	language = tracker_language_get_default_code ();
-@@ -818,7 +831,8 @@ config_create_with_defaults (GKeyFile *key_file,
+ 
+-	watch_directory_roots[0] = g_get_home_dir ();
+-
+ 	g_message ("Loading defaults into GKeyFile...");
+ 
+ 	/* General */
+@@ -818,7 +829,8 @@ config_create_with_defaults (GKeyFile *key_file,
  
  	if (overwrite || !g_key_file_has_key (key_file, GROUP_WATCHES, KEY_NO_WATCH_DIRECTORY_ROOTS, NULL)) {
  		g_key_file_set_string_list (key_file, GROUP_WATCHES, KEY_NO_WATCH_DIRECTORY_ROOTS,
