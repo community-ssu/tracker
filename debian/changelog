@@ -8,7 +8,7 @@ tracker (0.6.95-3maemo1) stable; urgency=low
   * Updated patch 03 to now ignore /home MMC.
   * Updated patch 02 to now not include /home/user/MyDocs as duplicate
   * Added TrackerDBInterface invalidation scheme.
-	
+
  -- Martyn Russell <martyn@imendio.com>  Thu,  4 June 2009 12:00:00 +0000
 
 tracker (0.6.95-2maemo1) stable; urgency=low

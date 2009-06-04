@@ -27,6 +27,7 @@ DEB_CONFIGURE_EXTRA_FLAGS := 			\
 	--disable-detailed-metadata		\
 	--enable-video-extractor=gstreamer 	\
 	--disable-gstreamer-helix		\
+	--enable-gstreamer-tagreadbin		\
 	--enable-external-sqlite 		\
 	--enable-poppler-glib			\
 	--enable-libexif 			\
