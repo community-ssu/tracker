@@ -1,14 +1,12 @@
 tracker (0.6.95-3maemo2) stable; urgency=low
 
+  * Fixes: NB#114880, tracker-extract crashed while extracting a video
+  * Fixes: NB#95873, Duration not extracted for mp2 and aac files
+  * Fixes: NB#96142, Video library : Duration of the Video clips is not...
+  * Fixes: GB#584809, Remove tracker-thumbnailer manpage 
   * Moved back startup script later in the sequence.
 
- -- Martyn Russell <martyn@imendio.com>  Thu,  4 June 2009 17:33:00 +0000
-
-tracker (0.6.95-3maemo1) stable; urgency=low
-
-  * Moved back startup script later in the sequence.
-
- -- Martyn Russell <martyn@imendio.com>  Thu,  4 June 2009 17:33:00 +0000
+ -- Martyn Russell <martyn@imendio.com>  Thu,  4 June 2009 16:00:00 +0000
 
 tracker (0.6.95-3maemo1) stable; urgency=low
 
