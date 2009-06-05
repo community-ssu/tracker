@@ -1,3 +1,13 @@
+tracker (0.6.95-4maemo1) stable; urgency=low
+
+  * Fixes: NB#117899, iTunes+ m4a song cover art is not shown
+  * Fixes: NB#119840, Music-Artists -Library view not displayed by...
+  * Fixes: NB#119384, duration is not extracted for the  wmv file of...
+  * Fixes race condition when setting DB mode between daemon/indexer
+  * Added GError handling libtracker-data so we log errors
+
+ -- Martyn Russell <martyn@imendio.com>  Fri,  5 June 2009 12:00:00 +0000
+
 tracker (0.6.95-3maemo3) stable; urgency=low
 
   * Fixes patch 02 watch dir roots, don't overwrite with $HOME
