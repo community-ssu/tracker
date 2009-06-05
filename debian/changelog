@@ -1,3 +1,10 @@
+tracker (0.6.95-5~unreleased~maemo1) stable; urgency=low
+
+  * Fixes: NB#120568, Found tracker indexer crash after clear device
+  * Rewritten tracker.sh to use regular commands, instead of dsme
+
+ -- Martyn Russell <martyn@imendio.com>  Fri,  5 June 2009 15:54:00 +0000
+
 tracker (0.6.95-4maemo1) stable; urgency=low
 
   * Fixes: NB#117899, iTunes+ m4a song cover art is not shown
