@@ -6,7 +6,7 @@
 DAEMON=/usr/lib/tracker/trackerd
 NAME=trackerd
 DESC=Tracker
-OPTIONS="-s 5"
+OPTIONS=""
 
 test -x $DAEMON || exit 0
 
