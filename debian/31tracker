@@ -1,2 +1,0 @@
-#!/bin/sh
-/usr/lib/tracker/trackerd -s 5 > /dev/null 2>&1 &

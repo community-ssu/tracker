@@ -17,4 +17,4 @@ debian/tmp/etc/xdg/autostart/trackerd.desktop usr/share/autostart/
 debian/tracker.sh etc/osso-af-init
 debian/tracker-cud.sh etc/osso-cud-scripts
 debian/tracker-rfs.sh etc/osso-rfs-scripts
-debian/31tracker etc/X11/Xsession.post/
+debian/23tracker etc/X11/Xsession.post/
