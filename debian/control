@@ -34,6 +34,12 @@ Priority: extra
 Depends: tracker (= ${binary:Version})
 Description: All-in-one indexer, search tool and metadata database.
 
+Package: tracker-doc
+Architecture: any
+Priority: extra
+Depends: tracker (= ${binary:Version})
+Description: Tracker documentation package.
+
 Package: libtrackerclient0
 Architecture: any
 Section: libs
