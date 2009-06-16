@@ -3,12 +3,11 @@ tracker (0.6.95-6maemo1~unreleased) stable; urgency=low
   * Fixes: NB#107116, Music:Duration displayed as -:- in library for...
   * Fixes: NB#117593, Top most played and Never played songs not listed...
   * Fixes: NB#119230, tracker-extract: memory management shall be improved
-  * Fixes: NB#114360, Main view UI: Tracker takes considerable time to...
   * Fixes: NB#121542, trackerd[1460]: GLIB CRITICAL ** GLib-GIO - g_file...
   * Moved 31tracker to 23tracker, so we start earlier
   * Added GError handling to crawler GIO operations
   * Added empty tracker-doc package to fill sysint requirements.
-	
+
  -- Martyn Russell <martyn@imendio.com>  Thu, 11 June 2009 14:00:00 +0000
 
 tracker (0.6.95-5maemo1) stable; urgency=low
