@@ -5,8 +5,10 @@ tracker (0.6.95-6maemo1) stable; urgency=low
   * Fixes: NB#119230, tracker-extract: memory management shall be improved
   * Fixes: NB#121542, trackerd[1460]: GLIB CRITICAL ** GLib-GIO - g_file...
   * Moved 31tracker to 23tracker, so we start earlier
+  * Removed DISTINCT keyword from GetByServiceType, should speed things up
   * Added GError handling to crawler GIO operations
   * Added empty tracker-doc package to fill sysint requirements.
+  * Added tracker-extract code to set /proc/self/oom_adj to 15.
 
  -- Martyn Russell <martyn@imendio.com>  Tue, 16 June 2009 17:30:00 +0000
 
