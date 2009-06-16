@@ -34,14 +34,7 @@
 #include "tracker-log.h"
 #include "tracker-os-dependant.h"
 
-/* Maximum here is a G_MAXLONG, so if you want to use > 2GB, you have
- * to set MEM_LIMIT to RLIM_INFINITY
- */
-#ifdef __x86_64__
-#define MEM_LIMIT 512 * 1024 * 1024
-#else
-#define MEM_LIMIT 80 * 1024 * 1024
-#endif
+#define MEM_LIMIT 100 * 1024 * 1024
 
 #if defined(__OpenBSD__) && !defined(RLIMIT_AS)
 #define RLIMIT_AS RLIMIT_DATA
@@ -268,13 +261,63 @@ get_memory_total (void)
 	return total;
 }
 
+static glong
+get_process_memory_usage (void)
+{
+	gchar *contents = NULL;
+	GError *error;
+	glong memory = 0;
+
+	if (!g_file_get_contents ("/proc/self/status",
+				  &contents,
+				  NULL,
+				  &error)) {
+		g_critical ("Could not get process current memory usage: %s", error->message);
+		g_error_free (error);
+	} else {
+		gchar *p, *end;
+
+		p = contents;
+		end = strchr (p, '\n');
+
+		while (p) {
+			if (end) {
+				*end = '\0';
+			}
+
+			if (g_str_has_prefix (p, "VmSize:")) {
+				gchar *line_end;
+
+				/* Get VmSize since we actually deal with RLIMIT_AS anyway */
+				p += strlen ("VmSize:");
+				line_end = strstr (p, "kB");
+				*line_end = '\0';
+
+				memory = strtol (p, NULL, 10);
+				p = line_end + 1;
+			}
+
+			if (end) {
+				p = end + 1;
+				end = strchr (p, '\n');
+			} else {
+				p = NULL;
+			}
+		}
+
+		g_free (contents);
+	}
+
+	return memory * 1024;
+}
+
 static void
 tracker_memory_set_oom_adj (void)
 {
 	const gchar *str = "15";
 	gboolean success = FALSE;
 	int fd;
- 
+
 	fd = open ("/proc/self/oom_adj", O_WRONLY);
 
 	if (fd != -1) {
@@ -296,12 +339,27 @@ gboolean
 tracker_memory_setrlimits (void)
 {
 #ifndef DISABLE_MEM_LIMITS
-	struct rlimit rl;
-	glong         total;
-	glong         limit;
+	struct rlimit  rl;
+	glong          buffer;
+	glong          total;
+	glong          limit;
+	glong          current, ideal;
+	gchar         *str1, *str2, *str3;
 
 	total = get_memory_total ();
-	limit = CLAMP (MEM_LIMIT, 0, total);
+	current = get_process_memory_usage ();
+	buffer = MEM_LIMIT;
+
+#ifdef __x86_64__
+	/* We multiply the memory limit here because otherwise it
+	 * generally isn't enough. 
+	 */
+	buffer *= 12;
+#endif /* __x86_64__ */
+
+	ideal = current + buffer;
+
+	limit = CLAMP (ideal, 0, total);
 
 	/* We want to limit the max virtual memory
 	 * most extractors use mmap() so only virtual memory can be
@@ -317,31 +375,32 @@ tracker_memory_setrlimits (void)
 			   str ? str : "no error given");
 
                return FALSE;
-	} else {
-		getrlimit (RLIMIT_DATA, &rl);
-		rl.rlim_cur = limit;
-
-		if (setrlimit (RLIMIT_DATA, &rl) == -1) {
-			const gchar *str = g_strerror (errno);
-
-			g_critical ("Could not set heap memory limit with setrlimit(RLIMIT_DATA), %s",
-				    str ? str : "no error given");
-
-			return FALSE;
-		} else {
-			gchar *str1, *str2;
-
-			str1 = g_format_size_for_display (total);
-			str2 = g_format_size_for_display (limit);
-
-			g_message ("Setting memory limitations: total is %s, virtual/heap set to %s",
-				   str1,
-				   str2);
-
-			g_free (str2);
-			g_free (str1);
-		}
 	}
+
+	getrlimit (RLIMIT_DATA, &rl);
+	rl.rlim_cur = limit;
+	
+	if (setrlimit (RLIMIT_DATA, &rl) == -1) {
+		const gchar *str = g_strerror (errno);
+		
+		g_critical ("Could not set heap memory limit with setrlimit(RLIMIT_DATA), %s",
+			    str ? str : "no error given");
+		
+		return FALSE;
+	}
+
+	str1 = g_format_size_for_display (total);
+	str2 = g_format_size_for_display (limit);
+	str3 = g_format_size_for_display (buffer);
+	
+	g_message ("Setting memory limitations: total is %s, virtual/heap set to %s (%s buffer)",
+		   str1,
+		   str2,
+		   str3);
+	
+	g_free (str3);
+	g_free (str2);
+	g_free (str1);
 #endif /* DISABLE_MEM_LIMITS */
 
 	tracker_memory_set_oom_adj ();
