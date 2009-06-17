@@ -1,4 +1,4 @@
-tracker (0.6.95-7maemo1~unreleased) stable; urgency=low
+tracker (0.6.95-7maemo1) stable; urgency=low
 
   * Fixes: NB#119318, Russian mp3 id tag is displayed incorrectly...
   * Fixes multiple instances of trackerd caused by use of run-standalone.sh
@@ -6,7 +6,7 @@ tracker (0.6.95-7maemo1~unreleased) stable; urgency=low
   * Adds libenca support for determining encodings from data snippets
   * Improves trackerd get statistics speed significantly.
 
- -- Martyn Russell <martyn@imendio.com>  Wed, 17 June 2009 17:00:00 +0000
+ -- Martyn Russell <martyn@imendio.com>  Wed, 17 June 2009 17:45:00 +0000
 
 tracker (0.6.95-6maemo1) stable; urgency=low
 
