@@ -40,6 +40,10 @@
 #include <sys/mman.h>
 #endif /* G_OS_WIN32 */
 
+#ifdef HAVE_ENCA
+#include <enca.h>
+#endif
+
 #include <libtracker-common/tracker-file-utils.h>
 #include <libtracker-common/tracker-utils.h>
 
@@ -441,7 +445,7 @@ un_unsync (const unsigned char *source,
 		*dest = source[offset];
 
 		if ((source[offset] == 0xFF) && 
-		    (source[offset+1] == 0x00)) {
+		    (source[offset + 1] == 0x00)) {
 			offset++;
 			new_size--;
 		}
@@ -452,13 +456,57 @@ un_unsync (const unsigned char *source,
 	*dest_size = new_size;
 }
 
+static char*
+get_encoding (const char *data, size_t size, gboolean **is_enca)
+{
+	gchar *encoding = NULL;
+
+#ifdef HAVE_ENCA
+	const char **langs;
+	size_t s, i;
+
+	langs = enca_get_languages (&s);
+
+	for (i = 0; i < s && !encoding; i++) {
+		EncaAnalyser analyser;
+		EncaEncoding eencoding;
+
+		analyser = enca_analyser_alloc (langs[i]);
+		eencoding = enca_analyse_const (analyser, data, size);
+
+		if (enca_charset_is_known (eencoding.charset)) {
+			if (is_enca) {
+				*is_enca = TRUE;
+			}
+			encoding = g_strdup (enca_charset_name (eencoding.charset, 
+								ENCA_NAME_STYLE_ICONV));
+		}
+
+		enca_analyser_free (analyser);
+	}
+
+	free (langs);
+#endif
+
+	if (!encoding) {
+		encoding = g_strdup ("ISO-8859-1");
+	}
+
+	return encoding;
+}
+
 static gboolean
 get_id3 (const gchar *data,
 	 size_t       size,
 	 id3tag      *id3)
 {
+#ifdef HAVE_ENCA
+	GString *s;
+#endif /* HAVE_ENCA */
 	const gchar *pos;
+	gchar *encoding = NULL;
 	gchar buf[5];
+	gboolean is_enca = FALSE;
 
 	if (!data) {
 		return FALSE;
@@ -474,56 +522,54 @@ get_id3 (const gchar *data,
 		return FALSE;
 	}
 
+#ifdef HAVE_ENCA
+	/* Get the encoding for ALL the data we are extracting here */
+	s = g_string_new ("");
+	g_string_append_len (s, pos, 30);
+	g_string_append_len (s, pos + 30, 30);
+	g_string_append_len (s, pos + 60, 30);
+
+	encoding = get_encoding (s->str, 90, &is_enca);
+	g_string_free (s, TRUE);
+#else  /* HAVE_ENCA */
+	encoding = get_encoding (NULL, 0, NULL);
+#endif /* HAVE_ENCA */
+
+	/* Now convert all the data separately */
 	pos += 3;
-
-	id3->title = g_convert (pos, 30,
-				"UTF-8",
-				"ISO-8859-1",
-				NULL, NULL, NULL);
+	id3->title = g_convert (pos, 30, "UTF-8", encoding, NULL, NULL, NULL);
 
 	pos += 30;
-	id3->artist = g_convert (pos, 30,
-				 "UTF-8",
-				 "ISO-8859-1",
-				 NULL, NULL, NULL);
+	id3->artist = g_convert (pos, 30, "UTF-8", encoding, NULL, NULL, NULL);
+
 	pos += 30;
-	id3->album = g_convert (pos, 30,
-				"UTF-8",
-				"ISO-8859-1",
-				NULL, NULL, NULL);
+	id3->album = g_convert (pos, 30, "UTF-8", encoding, NULL, NULL, NULL);
+
 	pos += 30;
-	id3->year = g_convert (pos, 4,
-			       "UTF-8",
-			       "ISO-8859-1",
-			       NULL, NULL, NULL);
+	id3->year = g_convert (pos, 4, "UTF-8", encoding, NULL, NULL, NULL);
 
 	pos += 4;
 
-	if (pos[28] != (guint)0) {
-		id3->comment = g_convert (pos, 30,
-					  "UTF-8",
-					  "ISO-8859-1",
-					  NULL, NULL, NULL);
-
+	if (pos[28] != 0) {
+		id3->comment = g_convert (pos, 30, "UTF-8", encoding, NULL, NULL, NULL);
 		id3->trackno = NULL;
 	} else {
-		id3->comment = g_convert (pos, 28,
-					  "UTF-8",
-					  "ISO-8859-1",
-					  NULL, NULL, NULL);
+		id3->comment = g_convert (pos, 28, "UTF-8", encoding, NULL, NULL, NULL);
+
 		snprintf (buf, 5, "%d", pos[29]);
-		id3->trackno = strdup(buf);
+		id3->trackno = g_strdup (buf);
 	}
 
 	pos += 30;
-
 	id3->genre = g_strdup (get_genre_name ((guint) pos[0]));
 
 	if (!id3->genre) {
 		id3->genre = g_strdup ("");
 	}
 
-	return TRUE;
+	g_free (encoding);
+
+	return is_enca;
 }
 
 static gboolean
@@ -833,28 +879,28 @@ get_id3v24_tags (const gchar *data,
 
 				switch (data[pos + 10]) {
 				case 0x00:
-					word = g_convert (&data[pos+11],
-							  csize-1,
+					word = g_convert (&data[pos + 11],
+							  csize - 1,
 							  "UTF-8",
 							  "ISO-8859-1",
 							  NULL, NULL, NULL);
 					break;
 				case 0x01 :
-					word = g_convert (&data[pos+11],
-							  csize-1,
+					word = g_convert (&data[pos + 11],
+							  csize - 1,
 							  "UTF-8",
 							  "UTF-16",
 							  NULL, NULL, NULL);
 					break;
 				case 0x02 :
-					word = g_convert (&data[pos+11],
-							  csize-1,
+					word = g_convert (&data[pos + 11],
+							  csize - 1,
 							  "UTF-8",
 							  "UTF-16BE",
 							  NULL, NULL, NULL);
 					break;
 				case 0x03 :
-					word = strndup (&data[pos+11], csize-1);
+					word = strndup (&data[pos + 11], csize - 1);
 					break;
 
 				default:
@@ -862,8 +908,8 @@ get_id3v24_tags (const gchar *data,
 					 * try to convert from
 					 * iso-8859-1
 					 */
-					word = g_convert (&data[pos+11],
-							  csize-1,
+					word = g_convert (&data[pos + 11],
+							  csize - 1,
 							  "UTF-8",
 							  "ISO-8859-1",
 							  NULL, NULL, NULL);
@@ -939,21 +985,21 @@ get_id3v24_tags (const gchar *data,
 						  "ISO-8859-1",
 						  NULL, NULL, NULL);
 				break;
-			case 0x01 :
+			case 0x01:
 				word = g_convert (text,
 						  csize - offset,
 						  "UTF-8",
 						  "UTF-16",
 						  NULL, NULL, NULL);
 				break;
-			case 0x02 :
+			case 0x02:
 				word = g_convert (text,
 						  csize-offset,
 						  "UTF-8",
 						  "UTF-16BE",
 						  NULL, NULL, NULL);
 				break;
-			case 0x03 :
+			case 0x03:
 				word = g_strndup (text, csize - offset);
 				break;
 				
@@ -1091,28 +1137,28 @@ get_id3v23_tags (const gchar *data,
 
 				switch (data[pos + 10]) {
 				case 0x00:
-					word = g_convert (&data[pos+11],
-							  csize-1,
+					word = g_convert (&data[pos + 11],
+							  csize - 1,
 							  "UTF-8",
 							  "ISO-8859-1",
 							  NULL, NULL, NULL);
 					break;
 				case 0x01 :
-/* 					word = g_convert (&data[pos+11], */
-/* 							  csize-1, */
+/* 					word = g_convert (&data[pos + 11], */
+/* 							  csize - 1, */
 /* 							  "UTF-8", */
 /* 							  "UCS-2", */
 /* 							  NULL, NULL, NULL); */
-					word = ucs2_to_utf8 (&data[pos+11],
-							     csize-1);
+					word = ucs2_to_utf8 (&data[pos + 11],
+							     csize - 1);
 					break;
 				default:
 					/* Bad encoding byte,
 					 * try to convert from
 					 * iso-8859-1
 					 */
-					word = g_convert (&data[pos+11],
-							  csize-1,
+					word = g_convert (&data[pos + 11],
+							  csize - 1,
 							  "UTF-8",
 							  "ISO-8859-1",
 							  NULL, NULL, NULL);
@@ -1230,11 +1276,11 @@ get_id3v23_tags (const gchar *data,
 			guint        offset;
 			gint         mime_len;
 
-			text_type =  data[pos +10];
-			mime      = &data[pos +11];
+			text_type =  data[pos + 10];
+			mime      = &data[pos + 11];
 			mime_len  = strlen (mime);
-			pic_type  =  data[pos +11 + mime_len + 1];
-			desc      = &data[pos +11 + mime_len + 1 + 1];
+			pic_type  =  data[pos + 11 + mime_len + 1];
+			desc      = &data[pos + 11 + mime_len + 1 + 1];
 			
 			if (pic_type == 3 || (pic_type == 0 && filedata->albumartsize == 0)) {
 				offset = pos + 11 + mime_len + 2 + strlen (desc) + 1;
@@ -1319,8 +1365,8 @@ get_id3v20_tags (const gchar *data,
 				 */
 				switch (data[pos + 6]) {
 				case 0x00:
-					word = g_convert (&data[pos+7],
-							  csize-1,
+					word = g_convert (&data[pos + 7],
+							  csize - 1,
 							  "UTF-8",
 							  "ISO-8859-1",
 							  NULL, NULL, NULL);
@@ -1331,16 +1377,16 @@ get_id3v20_tags (const gchar *data,
 /* 							  "UTF-8", */
 /* 							  "UCS-2", */
 /* 							  NULL, NULL, NULL); */
-					word = ucs2_to_utf8 (&data[pos+7],
-							     csize-1);
+					word = ucs2_to_utf8 (&data[pos + 7],
+							     csize - 1);
 					break;
 				default:
 					/* Bad encoding byte,
 					 * try to convert from
 					 * iso-8859-1
 					 */
-					word = g_convert (&data[pos+7],
-							  csize-1,
+					word = g_convert (&data[pos + 7],
+							  csize - 1,
 							  "UTF-8",
 							  "ISO-8859-1",
 							  NULL, NULL, NULL);
@@ -1637,6 +1683,7 @@ extract_mp3 (const gchar *filename,
 	id3tag	     info;
 	goffset      audio_offset;
 	file_data    filedata;
+	gboolean     is_enca;
 
 	info.title = NULL;
 	info.artist = NULL;
@@ -1696,14 +1743,12 @@ extract_mp3 (const gchar *filename,
 
 	close (fd);
 
-	if (buffer == NULL || buffer == (void*) -1) {
+	if (buffer == NULL || buffer == (void*) - 1) {
 		return;
 	}
 
-	if (!get_id3 (id3v1_buffer, ID3V1_SIZE, &info)) {
-		/* Do nothing? */
-	}
-	
+	is_enca = get_id3 (id3v1_buffer, ID3V1_SIZE, &info);
+
 	g_free (id3v1_buffer);
 
 	if (!tracker_is_empty_string (info.title)) {
@@ -1758,29 +1803,31 @@ extract_mp3 (const gchar *filename,
 	g_free (info.trackno);
 	g_free (info.genre);
 
-	/* Get other embedded tags */
-	audio_offset = parse_id3v2 (buffer, buffer_size, metadata, &filedata);
+	if (!is_enca) {
+		/* Get other embedded tags */
+		audio_offset = parse_id3v2 (buffer, buffer_size, metadata, &filedata);
 
-	/* Get mp3 stream info */
-	mp3_parse (buffer, buffer_size, audio_offset, metadata, &filedata);
+		/* Get mp3 stream info */
+		mp3_parse (buffer, buffer_size, audio_offset, metadata, &filedata);
 
 #ifdef HAVE_GDKPIXBUF
-	tracker_process_albumart (filedata.albumartdata, filedata.albumartsize, filedata.albumartmime,
-				  /* g_hash_table_lookup (metadata, "Audio:Artist") */ NULL,
-				  g_hash_table_lookup (metadata, "Audio:Album"),
-				  g_hash_table_lookup (metadata, "Audio:AlbumTrackCount"),
-				  filename);
+		tracker_process_albumart (filedata.albumartdata, filedata.albumartsize, filedata.albumartmime,
+					  /* g_hash_table_lookup (metadata, "Audio:Artist") */ NULL,
+					  g_hash_table_lookup (metadata, "Audio:Album"),
+					  g_hash_table_lookup (metadata, "Audio:AlbumTrackCount"),
+					  filename);
 #else
-	tracker_process_albumart (NULL, 0, NULL,
-				  /* g_hash_table_lookup (metadata, "Audio:Artist") */ NULL,
-				  g_hash_table_lookup (metadata, "Audio:Album"),
-				  g_hash_table_lookup (metadata, "Audio:AlbumTrackCount"),
-				  filename);
+		tracker_process_albumart (NULL, 0, NULL,
+					  /* g_hash_table_lookup (metadata, "Audio:Artist") */ NULL,
+					  g_hash_table_lookup (metadata, "Audio:Album"),
+					  g_hash_table_lookup (metadata, "Audio:AlbumTrackCount"),
+					  filename);
 
 #endif /* HAVE_GDKPIXBUF */
 
-	g_free (filedata.albumartdata);
-	g_free (filedata.albumartmime);
+		g_free (filedata.albumartdata);
+		g_free (filedata.albumartmime);
+	}
 
 	/* Check that we have the minimum data. FIXME We should not need to do this */
 	if (!g_hash_table_lookup (metadata, "Audio:Title")) {
