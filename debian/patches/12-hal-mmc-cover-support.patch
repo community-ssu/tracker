@@ -1,0 +1,344 @@
+diff --git a/src/libtracker-common/tracker-hal.c b/src/libtracker-common/tracker-hal.c
+index b6942d3..1cf9f23 100644
+--- a/src/libtracker-common/tracker-hal.c
++++ b/src/libtracker-common/tracker-hal.c
+@@ -40,10 +40,12 @@
+ #define CAPABILITY_AC_ADAPTER  "ac_adapter"
+ #define CAPABILITY_BATTERY     "battery"
+ #define CAPABILITY_VOLUME      "volume"
++#define CAPABILITY_MMC_HOST    "mmc_host"
+ 
+ #define PROP_AC_ADAPTER_ON     "ac_adapter.present"
+ #define PROP_BATT_PERCENTAGE   "battery.charge_level.percentage"
+ #define PROP_IS_MOUNTED        "volume.is_mounted"
++#define PROP_MMC_HOST_BUTTON   "button.state.value"
+ 
+ #define GET_PRIV(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TRACKER_TYPE_HAL, TrackerHalPriv))
+ 
+@@ -53,6 +55,7 @@ typedef struct {
+ 
+ 	GHashTable    *all_devices;
+ 	GHashTable    *batteries;
++	GHashTable    *mmc_hosts;
+ 
+ 	GNode         *mounts;
+ 	GHashTable    *mounts_by_udi;
+@@ -87,12 +90,12 @@ static void	hal_get_property		(GObject	 *object,
+ static gboolean hal_setup_devices		(TrackerHal	 *hal);
+ static gboolean hal_setup_ac_adapters		(TrackerHal	 *hal);
+ static gboolean hal_setup_batteries		(TrackerHal	 *hal);
++static gboolean hal_setup_mmc_hosts             (TrackerHal      *hal);
+ 
+ static void     hal_battery_modify              (TrackerHal      *hal,
+ 						 const gchar     *udi);
+ static void     hal_battery_remove              (TrackerHal      *hal,
+ 						 const gchar     *udi);
+-
+ static gboolean hal_device_add			(TrackerHal	 *hal,
+ 						 LibHalVolume	 *volume);
+ static void	hal_device_added_cb		(LibHalContext	 *context,
+@@ -104,6 +107,9 @@ static void	hal_device_property_modified_cb (LibHalContext	 *context,
+ 						 const char	 *key,
+ 						 dbus_bool_t	  is_removed,
+ 						 dbus_bool_t	  is_added);
++static void     hal_mmc_host_modify             (TrackerHal      *hal,
++						 const gchar     *udi);
++
+ 
+ enum {
+ 	PROP_0,
+@@ -115,6 +121,8 @@ enum {
+ enum {
+ 	MOUNT_POINT_ADDED,
+ 	MOUNT_POINT_REMOVED,
++	COVER_OPENED,
++	COVER_CLOSED,
+ 	LAST_SIGNAL
+ };
+ 
+@@ -156,6 +164,24 @@ tracker_hal_class_init (TrackerHalClass *klass)
+ 			      G_TYPE_STRING,
+ 			      G_TYPE_STRING);
+ 
++	signals[COVER_OPENED] =
++		g_signal_new ("cover-opened",
++			      G_TYPE_FROM_CLASS (klass),
++			      G_SIGNAL_RUN_LAST,
++			      0,
++			      NULL, NULL,
++			      g_cclosure_marshal_VOID__VOID,
++			      G_TYPE_NONE, 0);
++
++	signals[COVER_CLOSED] =
++		g_signal_new ("cover-closed",
++			      G_TYPE_FROM_CLASS (klass),
++			      G_SIGNAL_RUN_LAST,
++			      0,
++			      NULL, NULL,
++			      g_cclosure_marshal_VOID__VOID,
++			      G_TYPE_NONE, 0);
++
+ 	g_object_class_install_property (object_class,
+ 					 PROP_BATTERY_IN_USE,
+ 					 g_param_spec_boolean ("battery-in-use",
+@@ -209,6 +235,11 @@ tracker_hal_init (TrackerHal *hal)
+ 						 (GDestroyNotify) g_free,
+ 						 NULL);
+ 
++	priv->mmc_hosts = g_hash_table_new_full (g_str_hash,
++						 g_str_equal,
++						 (GDestroyNotify) g_free,
++						 NULL);
++
+ 	dbus_error_init (&error);
+ 
+ 	priv->connection = dbus_bus_get (DBUS_BUS_SYSTEM, &error);
+@@ -268,6 +299,10 @@ tracker_hal_init (TrackerHal *hal)
+ 	if (!hal_setup_batteries (hal)) {
+ 		return;
+ 	}
++
++	if (!hal_setup_mmc_hosts (hal)) {
++		return;
++	}
+ }
+ 
+ static gboolean
+@@ -324,6 +359,10 @@ tracker_hal_finalize (GObject *object)
+ 		g_hash_table_unref (priv->batteries);
+ 	}
+ 
++	if (priv->mmc_hosts) {
++		g_hash_table_unref (priv->mmc_hosts);
++	}
++
+ 	g_free (priv->ac_adapter_udi);
+ 
+ 	if (priv->context) {
+@@ -554,6 +593,54 @@ hal_setup_batteries (TrackerHal *hal)
+ }
+ 
+ static gboolean
++hal_setup_mmc_hosts (TrackerHal *hal)
++{
++	TrackerHalPriv	*priv;
++	DBusError	 error;
++	gchar	       **devices, **p;
++	gint		 num;
++
++	priv = GET_PRIV (hal);
++	dbus_error_init (&error);
++
++	devices = libhal_find_device_by_capability (priv->context,
++						    CAPABILITY_MMC_HOST,
++						    &num,
++						    &error);
++
++	if (dbus_error_is_set (&error)) {
++		g_critical ("Could not get MMC Hosts HAL info, %s",
++			    error.message);
++		dbus_error_free (&error);
++		return FALSE;
++	}
++
++	g_message ("HAL found %d MMC hosts (for monitoring covers)", num);
++
++	if (!devices || !devices[0]) {
++		libhal_free_string_array (devices);
++		return TRUE;
++	}
++
++	for (p = devices; *p; p++) {
++		g_message ("  Device '%s'", *p);
++
++		libhal_device_add_property_watch (priv->context, *p, &error);
++		hal_mmc_host_modify (hal, *p);
++
++		if (dbus_error_is_set (&error)) {
++			g_critical ("Could not add device:'%s' to property watch, %s",
++				    *p, error.message);
++			dbus_error_free (&error);
++		}
++	}
++
++	libhal_free_string_array (devices);
++
++	return TRUE;
++}
++
++static gboolean
+ mount_point_traverse_func (GNode    *node,
+ 			   gpointer  user_data)
+ {
+@@ -1001,6 +1088,42 @@ hal_device_removed_cb (LibHalContext *context,
+ }
+ 
+ static void
++hal_mmc_host_modify (TrackerHal  *hal,
++		     const gchar *udi)
++{
++	TrackerHalPriv *priv;
++	gboolean old_state, state;
++
++	priv = GET_PRIV (hal);
++	state = libhal_device_get_property_bool (priv->context, udi,
++						 PROP_MMC_HOST_BUTTON,
++						 NULL);
++
++	if (state == -1) {
++		/* Hal property missing, ignore */
++		return;
++	}
++
++	old_state = GPOINTER_TO_INT (g_hash_table_lookup (priv->mmc_hosts, udi));
++
++	if (old_state != state) {
++		g_hash_table_replace (priv->mmc_hosts,
++				      g_strdup (udi),
++				      GINT_TO_POINTER (state));
++
++		g_message ("HAL device:'%s' for cover is now reporting to be %s",
++			   udi,
++			   state ? "closed" : "opened");
++
++		if (!state) {
++			g_signal_emit (hal, signals[COVER_OPENED], 0);
++		} else {
++			g_signal_emit (hal, signals[COVER_CLOSED], 0);
++		}
++	}
++}
++
++static void
+ hal_device_property_modified_cb (LibHalContext *context,
+ 				 const char    *udi,
+ 				 const char    *key,
+@@ -1038,6 +1161,10 @@ hal_device_property_modified_cb (LibHalContext *context,
+ 		if (strcmp (key, PROP_BATT_PERCENTAGE) == 0) {
+ 			hal_battery_modify (hal, udi);
+ 		}
++	} else if (g_hash_table_lookup (priv->mmc_hosts, udi)) {
++		if (strcmp (key, PROP_MMC_HOST_BUTTON) == 0) {
++			hal_mmc_host_modify (hal, udi);
++		}
+ 	} else if (g_hash_table_lookup (priv->all_devices, udi)) {
+ 		const gchar *device_file;
+ 		gboolean is_mounted;
+diff --git a/src/trackerd/tracker-status.c b/src/trackerd/tracker-status.c
+index f51a5f9..77994a4 100644
+--- a/src/trackerd/tracker-status.c
++++ b/src/trackerd/tracker-status.c
+@@ -72,6 +72,7 @@ typedef struct {
+ 	gboolean       is_paused_for_dbus;
+ 	gboolean       is_paused_for_unknown;
+ 	gboolean       in_merge;
++	gboolean       cover_opened;
+ } TrackerStatusPrivate;
+ 
+ static void indexer_continued_cb    (DBusGProxy  *proxy,
+@@ -90,6 +91,10 @@ static void battery_in_use_cb       (GObject     *gobject,
+ static void battery_percentage_cb   (GObject     *object,
+ 				     GParamSpec  *pspec,
+ 				     gpointer     user_data);
++static void cover_opened_cb         (TrackerHal  *hal,
++				     gpointer     user_data);
++static void cover_closed_cb         (TrackerHal  *hal,
++				     gpointer     user_data);
+ static void disk_space_check_stop   (void);
+ 
+ static GStaticPrivate private_key = G_STATIC_PRIVATE_INIT;
+@@ -113,6 +118,12 @@ private_free (gpointer data)
+ 
+ #ifdef HAVE_HAL
+ 	g_signal_handlers_disconnect_by_func (private->hal,
++					      cover_closed_cb,
++					      NULL);
++	g_signal_handlers_disconnect_by_func (private->hal,
++					      cover_opened_cb,
++					      NULL);
++	g_signal_handlers_disconnect_by_func (private->hal,
+ 					      battery_in_use_cb,
+ 					      NULL);
+ 	g_signal_handlers_disconnect_by_func (private->hal,
+@@ -396,7 +407,8 @@ mode_check (void)
+ 	new_mode = private->mode;
+ 
+ 	if (private->is_paused_for_batt ||
+-	    private->is_paused_for_space) {
++	    private->is_paused_for_space ||
++	    private->cover_opened) {
+ 		new_mode = TRACKER_MODE_SAFE;
+ 	} else {
+ 		new_mode = TRACKER_MODE_FAST;
+@@ -546,6 +558,20 @@ battery_percentage_cb (GObject    *object,
+ 	set_up_throttle (FALSE);
+ }
+ 
++static void
++cover_opened_cb (TrackerHal *hal,
++		 gpointer    user_data)
++{
++	tracker_status_set_cover_opened (TRUE);
++}
++
++static void
++cover_closed_cb (TrackerHal *hal,
++		 gpointer    user_data)
++{
++	tracker_status_set_cover_opened (FALSE);
++}
++
+ #endif /* HAVE_HAL */
+ 
+ gboolean
+@@ -604,6 +630,12 @@ tracker_status_init (TrackerConfig *config,
+ 	g_signal_connect (private->hal, "notify::battery-in-use",
+ 			  G_CALLBACK (battery_in_use_cb),
+ 			  NULL);
++	g_signal_connect (private->hal, "cover-opened",
++			  G_CALLBACK (cover_opened_cb),
++			  NULL);
++	g_signal_connect (private->hal, "cover-closed",
++			  G_CALLBACK (cover_closed_cb),
++			  NULL);
+ #endif
+ 
+ 	private->is_readonly = FALSE;
+@@ -1303,6 +1335,24 @@ tracker_status_set_is_paused_for_dbus (gboolean value)
+ 	mode_check ();
+ }
+ 
++void
++tracker_status_set_cover_opened (gboolean value)
++{
++	TrackerStatusPrivate *private;
++	gboolean              emit;
++
++	private = g_static_private_get (&private_key);
++	g_return_if_fail (private != NULL);
++
++	/* Set value */
++	emit = private->cover_opened != value;
++	private->cover_opened = value;
++
++	/* Set indexer state */
++	indexer_recheck (TRUE, FALSE, emit);
++	mode_check ();
++}
++
+ /*
+  * Modes
+  */
+diff --git a/src/trackerd/tracker-status.h b/src/trackerd/tracker-status.h
+index 59d8a81..39a20ca 100644
+--- a/src/trackerd/tracker-status.h
++++ b/src/trackerd/tracker-status.h
+@@ -96,6 +96,8 @@ void	      tracker_status_set_is_paused_for_space (gboolean	     value);
+ gboolean      tracker_status_get_is_paused_for_dbus  (void);
+ void	      tracker_status_set_is_paused_for_dbus  (gboolean	     value);
+ 
++void          tracker_status_set_cover_opened        (gboolean       value);
++
+ /* Modes */
+ GType	      tracker_mode_get_type		     (void) G_GNUC_CONST;
+ TrackerMode   tracker_mode_get		             (void);
