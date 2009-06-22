@@ -1,3 +1,9 @@
+tracker (0.6.95-8maemo1~unreleased) stable; urgency=low
+
+  * Updated patch 07 to ignore usual symbian directories in memcards
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Mon, 22 June 2009 16:17:00 +0000
+
 tracker (0.6.95-7maemo2) stable; urgency=low
 
   * Fixes 23tracker script to include & after trackerd command
