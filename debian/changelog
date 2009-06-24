@@ -1,8 +1,24 @@
-tracker (0.6.95-8maemo1~unreleased) stable; urgency=low
+tracker (0.6.95-8maemo1) stable; urgency=low
 
-  * Updated patch 07 to ignore usual symbian directories in memcards
+  * Fixes: NB#119318, Russian mp3 id tag is displayed incorrectly...
+  * Fixes: NB#123591, Unknown genre displayed twice for the attached clips
+  * Fixes: NB#100123, Image:Date is empty for some of the images
+  * Fixes: NB#123030, Attached clip cannot be opened through music>arti...
+  * Fixes trackerd crash when double freeing a device in the processor
+  * Fixes trackerd crash when using strcasecmp with NULL in metadata API
+  * Fixes notification of removed URIs to thumbnailer from indexer
+  * Fixes compiler warnings
+  * Fixes MP3 genres so we are more strict with the exact strings
+  * Fixes MP3 genres which are handwritten to use leading uppercase
+  * Fixes compilation error if you don't have GdkPixbuf installed
+  * Updates tracker-stats cache timeout from 5 minutes to 2 minutes
+  * Updates patch 07 to ignore usual symbian directories in memcards
+  * Updates tracker-cud.sh to remove all thumbnails on user data reset
+  * Improves the design in the metadata handling for the indexer/modules
+  * Improve error handling/logging in sqlite created functions.
+  * Adds dependency on libenca
 
- -- Ivan Frade <ivan.frade@nokia.com>  Mon, 22 June 2009 16:17:00 +0000
+ -- Martyn Russell <martyn@imendio.com>  Wed, 24 June 2009 17:00:00 +0000
 
 tracker (0.6.95-7maemo2) stable; urgency=low
 
