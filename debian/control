@@ -13,7 +13,8 @@ Build-Depends: cdbs, debhelper (>= 5.0.0), autotools-dev,
   libhildon-thumbnail-dev (>= 3.0.10), libexempi-dev, libjpeg62-dev,
   libtiff4-dev (>= 3.8.2), libxml2-dev, libpoppler-glib-dev,
   libgstreamer0.10-dev (>= 0.10.20), libgstreamer-plugins-base0.10-dev
-  (>= 0.10.20), libtotem-plparser-dev, libiptcdata0-dev, mce-dev
+  (>= 0.10.20), libtotem-plparser-dev, libiptcdata0-dev, libenca-dev,
+  mce-dev
 Standards-Version: 3.7.2 
 
 Package: tracker
@@ -22,7 +23,7 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, shared-mime-info, dbus,
   libhal1, libhal-storage1, hildon-thumbnail (>= 3.0.10), libexempi3,
   libjpeg62, libgstreamer0.10-0, libgstreamer-plugins-base0.10-0,
   libtiff4 (>= 3.8.2), libxml2, libpoppler0c2-glib,
-  libtotem-plparser12, libiptcdata0, mce
+  libtotem-plparser12, libiptcdata0, libenca0, mce
 Recommends: tracker-utils, unzip, wv, poppler-utils | xpdf-utils,
   xsltproc, w3m, untex, o3read
 Suggests: evince, djvulibre-bin, gnumeric
