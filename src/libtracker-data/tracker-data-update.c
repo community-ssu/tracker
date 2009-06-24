@@ -453,7 +453,9 @@ tracker_data_update_delete_metadata (TrackerService *service,
 				     const gchar    *value)
 {
 	TrackerDBInterface *iface;
+	GString *s = NULL;
 	gint metadata_key;
+	gint collate_key;
 	gchar *id_str;
 
 	id_str = tracker_guint32_to_string (service_id);
@@ -510,15 +512,37 @@ tracker_data_update_delete_metadata (TrackerService *service,
 		break;
 	}
 
+	g_free (id_str);
+
 	metadata_key = tracker_ontology_service_get_key_metadata (tracker_service_get_name (service),
 								  tracker_field_get_name (field));
+	collate_key = tracker_ontology_service_get_key_collate (tracker_service_get_name (service),
+								tracker_field_get_name (field));
+
+	/* Try to do these together if we can, saves time */
 	if (metadata_key > 0) {
-		tracker_db_interface_execute_query (iface, NULL,
-						    "update Services set KeyMetadata%d = '%s' where id = %d",
-						    metadata_key, "", service_id);
+		s = g_string_new ("");
+		g_string_append_printf (s, "KeyMetadata%d = NULL", metadata_key);
 	}
 
-	g_free (id_str);
+	if (collate_key > 0) {
+		if (!s) {
+			s = g_string_new ("");
+		} else {
+			g_string_append (s, ", ");
+		}
+
+		g_string_append_printf (s, "KeyMetadataCollation%d = NULL", collate_key);
+	}
+
+	if (s) {
+		tracker_db_interface_execute_query (iface, NULL,
+						    "UPDATE Services SET %s WHERE id = %d",
+						    s->str, 
+						    service_id);
+
+		g_string_free (s, TRUE);
+	}
 }
 
 void
@@ -755,7 +779,7 @@ tracker_data_update_replace_service (const gchar *udi,
 	}
 
 	file_mtime = atoi (modified);
-	escaped_path = tracker_escape_db_string (path, FALSE);
+	escaped_path = tracker_escape_db_string (path, FALSE, TRUE);
 
 	basename = g_path_get_basename (escaped_path);
 	dirname = g_path_get_dirname (escaped_path);
@@ -932,13 +956,15 @@ tracker_data_update_metadata_context_add (TrackerDataUpdateMetadataContext *cont
 					  const gchar                      *value,
 					  const gchar                      *function)
 {
+	gchar *escaped;
+
+	escaped = tracker_escape_db_string (value, TRUE, TRUE);
+
 	if (G_UNLIKELY (function)) {
-		gchar *escaped;
 		gchar *wrapped;
 
-		escaped = tracker_escape_db_string (value, TRUE);
-		wrapped = g_strdup_printf ("%s(%s)", 
-					   function, 
+		wrapped = g_strdup_printf ("%s(%s)",
+					   function,
 					   escaped);
 		g_free (escaped);
 
@@ -948,7 +974,7 @@ tracker_data_update_metadata_context_add (TrackerDataUpdateMetadataContext *cont
 	} else {
 		g_hash_table_replace (context->data,
 				      g_strdup (column),
-				      tracker_escape_db_string (value, TRUE));
+				      escaped);
 	}
 }
 
