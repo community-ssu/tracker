@@ -27,6 +27,7 @@ DEB_CONFIGURE_EXTRA_FLAGS := 			\
 	--disable-detailed-metadata		\
 	--enable-video-extractor=gstreamer 	\
 	--disable-gstreamer-helix		\
+	--enable-gstreamer-tagreadbin		\
 	--enable-external-sqlite 		\
 	--enable-poppler-glib			\
 	--enable-libexif 			\
@@ -36,7 +37,8 @@ DEB_CONFIGURE_EXTRA_FLAGS := 			\
 	--enable-exempi				\
 	--enable-playlist			\
 	--enable-hildon-thumbnail		\
-	--enable-unzip-ps-gz-files=no
+	--enable-unzip-ps-gz-files=no		\
+	--disable-gtk-doc
 
 DEB_CONFIGURE_SCRIPT_ENV += LDFLAGS="-Wl,--as-needed"
 

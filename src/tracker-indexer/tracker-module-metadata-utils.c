@@ -49,6 +49,7 @@
 #define METADATA_FILE_SIZE           "File:Size"
 #define METADATA_FILE_MODIFIED       "File:Modified"
 #define METADATA_FILE_ACCESSED       "File:Accessed"
+#define METADATA_FILE_ADDED          "File:Added"
 
 #undef  TRY_LOCALE_TO_UTF8_CONVERSION
 #define TEXT_MAX_SIZE                1048576  /* bytes */
@@ -327,8 +328,11 @@ metadata_utils_add_embedded_data (TrackerModuleMetadata *metadata,
 
                         /* Dates come in ISO 8601 format, we handle them as time_t */
                         time_str = tracker_date_to_time_string (utf_value);
-                        tracker_module_metadata_add_string (metadata, name, time_str);
-                        g_free (time_str);
+
+			if (time_str) {
+				tracker_module_metadata_add_string (metadata, name, time_str);
+				g_free (time_str);
+			}
                 } else {
                         tracker_module_metadata_add_string (metadata, name, utf_value);
                 }
@@ -873,6 +877,8 @@ tracker_module_metadata_utils_get_data (GFile *file)
 	tracker_module_metadata_add_uint (metadata, METADATA_FILE_SIZE, st.st_size);
 	tracker_module_metadata_add_date (metadata, METADATA_FILE_MODIFIED, st.st_mtime);
 	tracker_module_metadata_add_date (metadata, METADATA_FILE_ACCESSED, st.st_atime);
+
+	tracker_module_metadata_add_date (metadata, METADATA_FILE_ADDED, time (NULL));
 
 	metadata_utils_get_embedded (file, mime_type, metadata);
 

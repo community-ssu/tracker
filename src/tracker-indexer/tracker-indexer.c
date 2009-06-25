@@ -116,6 +116,7 @@ struct TrackerIndexerPrivate {
 	GQuark current_module;
 	GHashTable *indexer_modules;
 
+	gchar *db_mode;
 	gchar *db_dir;
 
 	TrackerDBIndex *file_index;
@@ -627,6 +628,8 @@ tracker_indexer_finalize (GObject *object)
 	 */
 	stop_scheduled_flush (TRACKER_INDEXER (object));
 
+	g_free (priv->db_mode);
+
 	if (priv->pause_for_duration_id) {
 		g_source_remove (priv->pause_for_duration_id);
 	}
@@ -1025,6 +1028,26 @@ tracker_indexer_load_modules (TrackerIndexer *indexer)
 }
 
 static void
+set_up_databases (TrackerIndexer *indexer)
+{
+	TrackerIndexerPrivate *priv;
+
+	priv = indexer->private;
+
+	/* Set up databases, these pointers are mostly used to
+	 * start/stop transactions, since TrackerDBManager treats
+	 * interfaces as singletons, it's safe to just ask it
+	 * again for an interface.
+	 */
+	priv->cache = tracker_db_manager_get_db_interface (TRACKER_DB_CACHE);
+	priv->common = tracker_db_manager_get_db_interface (TRACKER_DB_COMMON);
+	priv->file_metadata = tracker_db_manager_get_db_interface (TRACKER_DB_FILE_METADATA);
+	priv->file_contents = tracker_db_manager_get_db_interface (TRACKER_DB_FILE_CONTENTS);
+	priv->email_metadata = tracker_db_manager_get_db_interface (TRACKER_DB_EMAIL_METADATA);
+	priv->email_contents = tracker_db_manager_get_db_interface (TRACKER_DB_EMAIL_CONTENTS);
+}
+
+static void
 tracker_indexer_init (TrackerIndexer *indexer)
 {
 	TrackerIndexerPrivate *priv;
@@ -1088,17 +1111,7 @@ tracker_indexer_init (TrackerIndexer *indexer)
 	g_signal_connect (priv->email_index, "error-received",
 			  G_CALLBACK (index_error_received_cb), indexer);
 
-	/* Set up databases, these pointers are mostly used to
-	 * start/stop transactions, since TrackerDBManager treats
-	 * interfaces as singletons, it's safe to just ask it
-	 * again for an interface.
-	 */
-	priv->cache = tracker_db_manager_get_db_interface (TRACKER_DB_CACHE);
-	priv->common = tracker_db_manager_get_db_interface (TRACKER_DB_COMMON);
-	priv->file_metadata = tracker_db_manager_get_db_interface (TRACKER_DB_FILE_METADATA);
-	priv->file_contents = tracker_db_manager_get_db_interface (TRACKER_DB_FILE_CONTENTS);
-	priv->email_metadata = tracker_db_manager_get_db_interface (TRACKER_DB_EMAIL_METADATA);
-	priv->email_contents = tracker_db_manager_get_db_interface (TRACKER_DB_EMAIL_CONTENTS);
+	set_up_databases (indexer);
 
 	/* Set up volume monitor */
 	priv->volume_monitor = g_volume_monitor_get ();
@@ -1275,7 +1288,8 @@ index_metadata (TrackerIndexer	      *indexer,
 	data.id = id;
 	data.add = TRUE;
 
-	tracker_module_metadata_foreach (metadata, index_metadata_foreach, &data);
+	tracker_data_metadata_foreach (TRACKER_DATA_METADATA (metadata),
+				       index_metadata_foreach, &data);
 
 	schedule_flush (indexer, FALSE);
 }
@@ -1632,7 +1646,8 @@ generate_item_thumbnail (TrackerIndexer        *indexer,
 {
 	const gchar *mime_type;
 
-	mime_type = tracker_module_metadata_lookup (metadata, METADATA_FILE_MIMETYPE, FALSE);
+	mime_type = tracker_data_metadata_lookup (TRACKER_DATA_METADATA (metadata),
+						  METADATA_FILE_MIMETYPE);
 
 	if (dirname && 
 	    dirname[0] == G_DIR_SEPARATOR && 
@@ -1720,9 +1735,9 @@ item_add_or_update (TrackerIndexer        *indexer,
 
 		unindex_metadata (indexer, id, service, old_metadata_emb);
 
-		tracker_module_metadata_foreach_remove (metadata,
-							remove_existing_non_emb_metadata,
-							old_metadata_non_emb);
+		tracker_data_metadata_foreach_remove (TRACKER_DATA_METADATA (metadata),
+						      remove_existing_non_emb_metadata,
+						      old_metadata_non_emb);
 
 		context = tracker_data_update_metadata_context_new (TRACKER_CONTEXT_TYPE_UPDATE,
 								    service, id);
@@ -1748,8 +1763,8 @@ item_add_or_update (TrackerIndexer        *indexer,
 		}
 
 		g_free (old_text);
-		tracker_data_metadata_free (old_metadata_emb);
-		tracker_data_metadata_free (old_metadata_non_emb);
+		g_object_unref (old_metadata_emb);
+		g_object_unref (old_metadata_non_emb);
 	} else {
 		TrackerDataUpdateMetadataContext *context;
 		GHashTable *data;
@@ -1966,12 +1981,14 @@ item_erase (TrackerIndexer *indexer,
 	data_metadata = tracker_data_query_metadata (service, service_id, TRUE);
 
 	if (data_metadata) {
-		const gchar *path, *mime_type;
+		const gchar *mime_type;
+		gchar *path;
 		GFile *file;
 		gchar *uri;
 
 		/* TODO URI branch: this is a URI conversion */
-		path = g_build_path (tracker_data_metadata_lookup (data_metadata, "File:Path"),
+		path = g_build_path (G_DIR_SEPARATOR_S,
+		                     tracker_data_metadata_lookup (data_metadata, "File:Path"),
 				     tracker_data_metadata_lookup (data_metadata, "File:Name"),
 				     NULL);
 		file = g_file_new_for_path (path);
@@ -1981,8 +1998,9 @@ item_erase (TrackerIndexer *indexer,
 		mime_type = tracker_data_metadata_lookup (data_metadata, "File:Mime");
 		tracker_thumbnailer_remove (uri, mime_type);
 
-		tracker_data_metadata_free (data_metadata);
+		g_object_unref (data_metadata);
 		g_free (uri);
+		g_free (path);
 	}
 
 	/* Get content, unindex the words and delete the contents */
@@ -2106,7 +2124,7 @@ item_move (TrackerIndexer  *indexer,
 		g_free (source_path);
 
 		if (old_metadata) {
-			tracker_data_metadata_free (old_metadata);
+			g_object_unref (old_metadata);
 		}
 
 		return FALSE;
@@ -2145,7 +2163,7 @@ item_move (TrackerIndexer  *indexer,
 	}
 
 	if (old_metadata) {
-		tracker_data_metadata_free (old_metadata);
+		g_object_unref (old_metadata);
 	}
 
 	g_free (source_path);
@@ -3649,4 +3667,85 @@ tracker_indexer_shutdown (TrackerIndexer	 *indexer,
 
 	dbus_g_method_return (context);
 	tracker_dbus_request_success (request_id);
+}
+
+static gboolean
+set_profile (TrackerIndexer *indexer,
+	     const gchar    *profile_name)
+{
+	TrackerDBManagerFlags flags = TRACKER_DB_MANAGER_FORCE_NO_REINDEX;
+	TrackerIndexerPrivate *priv;
+	gboolean return_val = TRUE;
+
+	priv = indexer->private;
+
+	if (g_strcmp0 (profile_name, priv->db_mode) != 0) {
+		g_free (priv->db_mode);
+		priv->db_mode = g_strdup (profile_name);
+	}
+
+	if (tracker_config_get_low_memory_mode (priv->config)) {
+		flags |= TRACKER_DB_MANAGER_LOW_MEMORY_MODE;
+	}
+
+	/* Pause the indexer, this also flushes data to DBs */
+	tracker_indexer_set_running (indexer, FALSE);
+
+	/* Reinitialize DB Manager with new profile */
+	tracker_db_manager_shutdown ();
+
+	if (!tracker_db_manager_init (flags, NULL, FALSE, priv->db_mode)) {
+		g_critical ("Could not restart DB manager, trying again with defaults");
+
+		if (!tracker_db_manager_init (flags, NULL, FALSE, NULL)) {
+			g_critical ("Not even defaults worked, bailing out.");
+			g_assert_not_reached ();
+		}
+
+		/* Reset this if we could get things working with no
+		 * profile set.
+		 */
+		g_free (priv->db_mode);
+		priv->db_mode = NULL;
+
+		return_val = FALSE;
+	}
+
+	/* Restore database pointers */
+	set_up_databases (indexer);
+
+	/* Restart the indexer */
+	tracker_indexer_set_running (indexer, TRUE);
+
+	return return_val;
+}
+
+void
+tracker_indexer_set_profile (TrackerIndexer         *indexer,
+			     const gchar            *profile_name,
+			     DBusGMethodInvocation  *context,
+			     GError                **error)
+{
+	guint request_id;
+
+	tracker_dbus_async_return_if_fail (TRACKER_IS_INDEXER (indexer), context);
+
+	request_id = tracker_dbus_get_next_request_id ();
+	tracker_dbus_request_new (request_id,
+				  "DBus request to switch to profile '%s'", profile_name);
+
+	if (!set_profile (indexer, profile_name)) {
+		GError *actual_error = NULL;
+
+		tracker_dbus_request_failed (request_id,
+					     &actual_error,
+					     "Could not set profile '%s'",
+					     profile_name);
+
+		dbus_g_method_return_error (context, actual_error);
+		g_error_free (actual_error);
+	} else {
+		dbus_g_method_return (context);
+		tracker_dbus_request_success (request_id);
+	}
 }

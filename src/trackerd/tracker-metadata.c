@@ -40,6 +40,7 @@
 
 #include "tracker-indexer-client.h"
 #include "tracker-dbus.h"
+#include "tracker-status.h"
 #include "tracker-metadata.h"
 #include "tracker-marshal.h"
 
@@ -82,30 +83,33 @@ tracker_metadata_get_internal (TrackerMetadata  *object,
 	gchar		   **values;
 
 	if (!tracker_ontology_service_is_valid (service_type)) {
-		tracker_dbus_request_failed (request_id,
-					     error,
-					     "Service '%s' is invalid or has not been implemented yet",
-					     service_type);
+		g_set_error (error,
+			     TRACKER_DBUS_ERROR,
+			     0,
+			     "Service '%s' is invalid or has not been implemented yet",
+			     service_type);
 		return NULL;
 	}
 
 	service_id = tracker_data_query_file_id (service_type, uri);
 
 	if (service_id <= 0) {
-		tracker_dbus_request_failed (request_id,
-					     error,
-					     "Service URI '%s' not found",
-					     uri);
+		g_set_error (error,
+			     TRACKER_DBUS_ERROR,
+			     0,
+			     "Service URI '%s' not found",
+			     uri);
 		return NULL;
 	}
 
 	/* Checking keys */
 	for (i = 0; i < g_strv_length (keys); i++) {
 		if (tracker_ontology_get_field_by_name (keys[i]) == NULL) {
-			tracker_dbus_request_failed (request_id,
-						     error,
-						     "Metadata field '%s' not registered in the system",
-						     keys[i]);
+			g_set_error (error,
+				     TRACKER_DBUS_ERROR,
+				     0,
+				     "Metadata field '%s' not registered in the system",
+				     keys[i]);
 			return NULL;
 		}
 	}
@@ -116,10 +120,11 @@ tracker_metadata_get_internal (TrackerMetadata  *object,
 	/* Check we have a file in the database before looking up the metadata. */
 	service_result = tracker_data_query_service_type_by_id (iface, service_id);
 	if (!service_result) {
-	       tracker_dbus_request_failed (request_id,
-					    error,
-					    "Service type can not be found for entity '%s'",
-					    uri);
+		g_set_error (error,
+			     TRACKER_DBUS_ERROR,
+			     0,
+			     "Service type can not be found for entity '%s'",
+			     uri);
 	       return NULL;
 	}
 
@@ -135,9 +140,10 @@ tracker_metadata_get_internal (TrackerMetadata  *object,
 	}
 
 	if (!values) {
-		tracker_dbus_request_failed (request_id,
-					     error,
-					     "No metadata information was available");
+		g_set_error (error,
+			     TRACKER_DBUS_ERROR,
+			     0,
+			     "No metadata information was available");
 		return NULL;
 	}
 
@@ -176,6 +182,9 @@ tracker_metadata_get (TrackerMetadata	     *object,
 						&actual_error);
 
 	if (!values) {
+		tracker_dbus_request_failed (request_id,
+					     &actual_error,
+					     NULL);
 		dbus_g_method_return_error (context, actual_error);
 		g_error_free (actual_error);
 		return;
@@ -229,6 +238,11 @@ tracker_metadata_get_multiple (TrackerMetadata	      *object,
 						      uris[i], 
 						      keys,
 						      &actual_error);
+		if (!strv) {
+			g_debug ("%s", actual_error->message);
+			g_error_free (actual_error);
+			actual_error = NULL;
+		}
 
 		/* Don't allow errors, but allow NULLs */
 		g_ptr_array_add (values, strv);
@@ -358,6 +372,7 @@ tracker_metadata_set (TrackerMetadata	     *object,
 						     keys[i]);
 			dbus_g_method_return_error (context, actual_error);
 			g_error_free (actual_error);
+			g_free (service_id);
 			return;
 		}
 
@@ -373,13 +388,27 @@ tracker_metadata_set (TrackerMetadata	     *object,
 						     len);
 			dbus_g_method_return_error (context, actual_error);
 			g_error_free (actual_error);
+			g_free (service_id);
 			return;
 		}
 	}
 
+	/* First check we have disk space, we do this with ALL our
+	 * indexer commands.
+	 */
+	if (tracker_status_get_is_paused_for_space ()) {
+		tracker_dbus_request_failed (request_id,
+					     &actual_error,
+					     "No disk space left to write to the databases");
+		dbus_g_method_return_error (context, actual_error);
+		g_error_free (actual_error);
+		g_free (service_id);
+		return;
+	}
+
 	/* Real insertion */
 	for (i = 0; i < g_strv_length (keys); i++) {
-		gchar	    **value;
+		gchar **value;
 
 		value = tracker_string_to_string_list (values[i]);
 		org_freedesktop_Tracker_Indexer_property_set (tracker_dbus_indexer_get_proxy (),
@@ -393,6 +422,7 @@ tracker_metadata_set (TrackerMetadata	     *object,
 			tracker_dbus_request_failed (request_id, &actual_error, NULL);
 			dbus_g_method_return_error (context, actual_error);
 			g_error_free (actual_error);
+			g_free (service_id);
 			return;
 		}
 	}

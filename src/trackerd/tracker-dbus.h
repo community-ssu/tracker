@@ -32,10 +32,11 @@
 #include <libtracker-db/tracker-db-index.h>
 
 #include "tracker-processor.h"
+#include "tracker-status.h"
 
 G_BEGIN_DECLS
 
-#define TRACKER_INDEXER_PAUSE_TIME_FOR_REQUESTS 5 /* seconds */
+#define TRACKER_INDEXER_PAUSE_TIME_FOR_REQUESTS 2 /* seconds */
 
 gboolean    tracker_dbus_init                    (TrackerConfig    *config);
 void        tracker_dbus_shutdown                (void);
@@ -47,6 +48,7 @@ gboolean    tracker_dbus_register_objects        (TrackerConfig    *config,
 GObject    *tracker_dbus_get_object              (GType             type);
 void        tracker_dbus_indexer_check_is_paused (void);
 DBusGProxy *tracker_dbus_indexer_get_proxy       (void);
+gboolean    tracker_dbus_indexer_set_profile     (TrackerMode mode);
 
 G_END_DECLS
 

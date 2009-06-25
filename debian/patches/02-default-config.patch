@@ -1,5 +1,5 @@
 diff --git a/src/libtracker-common/tracker-config.c b/src/libtracker-common/tracker-config.c
-index 6dcfd54..4345da2 100644
+index c0dfbf3..6bf4cee 100644
 --- a/src/libtracker-common/tracker-config.c
 +++ b/src/libtracker-common/tracker-config.c
 @@ -73,7 +73,7 @@
@@ -30,7 +30,7 @@ index 6dcfd54..4345da2 100644
  
  typedef struct _TrackerConfigPrivate TrackerConfigPrivate;
  
-@@ -759,8 +759,22 @@ config_create_with_defaults (GKeyFile *key_file,
+@@ -755,14 +755,25 @@ config_create_with_defaults (GKeyFile *key_file,
  			     gboolean  overwrite)
  {
  	gchar	     *language;
@@ -42,8 +42,7 @@ index 6dcfd54..4345da2 100644
 +		"$HOME/MyDocs/.sounds/Ringtones/", 
 +		NULL
 +	};
-+	const gchar  *watch_directory_roots[7] = {  
-+		"$HOME/MyDocs/",
++	const gchar  *watch_directory_roots[6] = {
 +		"$HOME/MyDocs/.sounds/", 
 +		"$HOME/MyDocs/.documents/", 
 +		"$HOME/MyDocs/.videos/", 
@@ -54,7 +53,13 @@ index 6dcfd54..4345da2 100644
  
  	/* Get default values */
  	language = tracker_language_get_default_code ();
-@@ -822,7 +836,8 @@ config_create_with_defaults (GKeyFile *key_file,
+ 
+-	watch_directory_roots[0] = g_get_home_dir ();
+-
+ 	g_message ("Loading defaults into GKeyFile...");
+ 
+ 	/* General */
+@@ -818,7 +829,8 @@ config_create_with_defaults (GKeyFile *key_file,
  
  	if (overwrite || !g_key_file_has_key (key_file, GROUP_WATCHES, KEY_NO_WATCH_DIRECTORY_ROOTS, NULL)) {
  		g_key_file_set_string_list (key_file, GROUP_WATCHES, KEY_NO_WATCH_DIRECTORY_ROOTS,

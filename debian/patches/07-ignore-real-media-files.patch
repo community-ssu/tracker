@@ -1,12 +1,14 @@
 diff --git a/data/modules/files.module b/data/modules/files.module
-index 4b26c83..6fac7ee 100644
+index 4b26c83..966a338 100644
 --- a/data/modules/files.module
 +++ b/data/modules/files.module
-@@ -8,7 +8,7 @@ RecurseDirectories=
+@@ -7,8 +7,8 @@ Directories=
+ RecurseDirectories=
  
  [Ignored]
- Directories=po;CVS;.svn;.git;core-dumps;
+-Directories=po;CVS;.svn;.git;core-dumps;
 -Files=*~;*.o;*.la;*.lo;*.loT;*.in;*.csproj;*.m4;*.rej;*.gmo;*.orig;*.pc;*.omf;*.aux;*.tmp;*.po;*.vmdk;*.vm*;*.nvram;*.part;*.rcore.lzo;autom4te;conftest;confstat;Makefile;SCCS;litmain.sh;libtool;config.status;confdefs.h;
++Directories=po;CVS;.svn;.git;core-dumps;_PAlbTN;Private;system;
 +Files=*~;*.o;*.la;*.lo;*.loT;*.in;*.csproj;*.m4;*.rej;*.gmo;*.orig;*.pc;*.omf;*.aux;*.tmp;*.po;*.vmdk;*.vm*;*.nvram;*.part;*.rcore.lzo;autom4te;conftest;confstat;Makefile;SCCS;litmain.sh;libtool;config.status;confdefs.h;*.ra;*.ram;*.rm;*.rmj;*.rmm;*.rmvb;*.rpm;*.rv;*.smil;
  DirectoriesWithContent=backup.metadata;
  

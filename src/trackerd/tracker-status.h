@@ -42,6 +42,12 @@ typedef enum {
 	TRACKER_STATUS_SHUTDOWN
 } TrackerStatus;
 
+#define TRACKER_TYPE_MODE (tracker_mode_get_type ())
+
+typedef enum {
+	TRACKER_MODE_SAFE,
+	TRACKER_MODE_FAST,
+} TrackerMode;
 
 gboolean      tracker_status_init		     (TrackerConfig *config,
 						      TrackerHal    *hal);
@@ -69,6 +75,9 @@ void	      tracker_status_set_is_running	     (gboolean	     value);
 void	      tracker_status_set_is_first_time_index (gboolean	     value);
 gboolean      tracker_status_get_is_first_time_index (void);
 
+void	      tracker_status_set_is_initial_check    (gboolean	     value);
+gboolean      tracker_status_get_is_initial_check    (void);
+
 gboolean      tracker_status_get_in_merge	     (void);
 void	      tracker_status_set_in_merge	     (gboolean	     value);
 
@@ -86,6 +95,11 @@ void	      tracker_status_set_is_paused_for_space (gboolean	     value);
 
 gboolean      tracker_status_get_is_paused_for_dbus  (void);
 void	      tracker_status_set_is_paused_for_dbus  (gboolean	     value);
+
+/* Modes */
+GType	      tracker_mode_get_type		     (void) G_GNUC_CONST;
+TrackerMode   tracker_mode_get		             (void);
+const gchar * tracker_mode_to_string		     (TrackerMode    mode);
 
 G_END_DECLS
 

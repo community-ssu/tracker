@@ -40,6 +40,10 @@
 #include <sys/mman.h>
 #endif /* G_OS_WIN32 */
 
+#ifdef HAVE_ENCA
+#include <enca.h>
+#endif
+
 #include <libtracker-common/tracker-file-utils.h>
 #include <libtracker-common/tracker-utils.h>
 
@@ -47,14 +51,16 @@
 #include "tracker-extract-albumart.h"
 #include "tracker-escape.h"
 
-/* We mmap the beginning of the file and read separately the last 128 bytes
-   for id3v1 tags. While these are probably cornercases the rationale is that
-   we don't want to fault a whole page for the last 128 bytes and on the other
-   we don't want to mmap the whole file with unlimited size (might need to create
-   private copy in some special cases, finding continuous space etc). We now take
-   5 first MB of the file and assume that this is enough. In theory there is no
-   maximum size as someone could embed 50 gigabytes of albumart there.
-*/
+/* We mmap the beginning of the file and read separately the last 128
+ * bytes for id3v1 tags. While these are probably cornercases the
+ * rationale is that we don't want to fault a whole page for the last
+ * 128 bytes and on the other we don't want to mmap the whole file
+ * with unlimited size (might need to create private copy in some
+ * special cases, finding continuous space etc). We now take 5 first
+ * MB of the file and assume that this is enough. In theory there is
+ * no maximum size as someone could embed 50 gigabytes of albumart
+ * there. 
+ */
 
 #define MAX_FILE_READ	  1024 * 1024 * 5
 #define MAX_MP3_SCAN_DEEP 16768
@@ -67,7 +73,7 @@
 typedef struct {
 	const gchar *text;
 	const gchar *type;
-} Matches;
+} tag_matches;
 
 typedef struct {
 	gchar *title;
@@ -77,7 +83,8 @@ typedef struct {
 	gchar *comment;
 	gchar *trackno;
 	gchar *genre;
-} id3tag;
+	gchar *encoding;
+} tag_info;
 
 typedef struct {
 	size_t         size;
@@ -107,7 +114,23 @@ enum {
 static void extract_mp3 (const gchar *filename,
 			 GHashTable  *metadata);
 
+/* This list is based on the comprehensive list on the French wiki
+ * page here:
+ * 
+ *   http://fr.wikipedia.org/wiki/ID3
+ * 
+ * The actual list as explained by the standard is available here but
+ * has some ~17 or so genres missing which are on the French list:
+ *
+ *   http://www.id3.org/id3v2.3.0#head-129376727ebe5309c1de1888987d070288d7c7e7
+ * 
+ * Since the index is the most important thing here and this list is
+ * not sorted alphabetically, all new IDs are only ever appended to
+ * the list and that's why we can still use the French ID3 list over
+ * the actual list on the standards website.
+ */
 static const char *const genre_names[] = {
+	/* Standard genres */
 	"Blues",
 	"Classic Rock",
 	"Country",
@@ -148,7 +171,7 @@ static const char *const genre_names[] = {
 	"Sound Clip",
 	"Gospel",
 	"Noise",
-	"Alt. Rock",
+	"AlternRock",
 	"Bass",
 	"Soul",
 	"Punk",
@@ -167,7 +190,7 @@ static const char *const genre_names[] = {
 	"Southern Rock",
 	"Comedy",
 	"Cult",
-	"Gangsta Rap",
+	"Gangsta",
 	"Top 40",
 	"Christian Rap",
 	"Pop/Funk",
@@ -175,7 +198,7 @@ static const char *const genre_names[] = {
 	"Native American",
 	"Cabaret",
 	"New Wave",
-	"Psychedelic",
+	"Psychadelic",
 	"Rave",
 	"Showtunes",
 	"Trailer",
@@ -188,11 +211,13 @@ static const char *const genre_names[] = {
 	"Musical",
 	"Rock & Roll",
 	"Hard Rock",
+
+	/* Added on December 12, 1997 in cooperation with Winamp: */
 	"Folk",
-	"Folk/Rock",
+	"Folk-Rock",
 	"National Folk",
 	"Swing",
-	"Fast-Fusion",
+	"Fast Fusion",
 	"Bebob",
 	"Latin",
 	"Revival",
@@ -219,11 +244,15 @@ static const char *const genre_names[] = {
 	"Primus",
 	"Porn Groove",
 	"Satire",
+
+	/* Added on January 26, 1998 to ensure compatibility with Winamp 1.7: */
 	"Slow Jam",
 	"Club",
 	"Tango",
 	"Samba",
 	"Folklore",
+
+	/* Added on April 13, 1998 to ensure compatibility with Winamp 1.90: */
 	"Ballad",
 	"Power Ballad",
 	"Rhythmic Soul",
@@ -231,7 +260,7 @@ static const char *const genre_names[] = {
 	"Duet",
 	"Punk Rock",
 	"Drum Solo",
-	"A Cappella",
+	"A capella",
 	"Euro-House",
 	"Dance Hall",
 	"Goa",
@@ -250,6 +279,8 @@ static const char *const genre_names[] = {
 	"Crossover",
 	"Contemporary Christian",
 	"Christian Rock",
+
+	/* Added on Jun 1, 1998 to ensure compatibility with Winamp 1.91: */
 	"Merengue",
 	"Salsa",
 	"Thrash Metal",
@@ -266,29 +297,33 @@ static const guint freq_mask = 0xC0000;
 static const guint ch_mask = 0xC0000000;
 static const guint pad_mask = 0x20000;
 
-static guint bitrate_table[16][6] = {
+static const guint bitrate_table[16][6] = {
 	{   0,   0,   0,   0,   0,   0 },
-	{  32,  32,  32,  32,  32,   8 },
-	{  64,  48,  40,  64,  48,  16 },
-	{  96,  56,  48,  96,  56,  24 },
-	{ 128,  64,  56, 128,  64,  32 },
-	{ 160,  80,  64, 160,  80,  64 },
-	{ 192,  96,  80, 192,  96,  80 },
-	{ 224, 112,  96, 224, 112,  56 },
-	{ 256, 128, 112, 256, 128,  64 },
-	{ 288, 160, 128, 288, 160, 128 },
-	{ 320, 192, 160, 320, 192, 160 },
-	{ 352, 224, 192, 352, 224, 112 },
-	{ 384, 256, 224, 384, 256, 128 },
-	{ 416, 320, 256, 416, 320, 256 },
-	{ 448, 384, 320, 448, 384, 320 },
+	{  32,  32,  32,  32,   8,   8 },
+	{  64,  48,  40,  48,  16,  16 },
+	{  96,  56,  48,  56,  24,  24 },
+	{ 128,  64,  56,  64,  32,  32 },
+	{ 160,  80,  64,  80,  40,  40 },
+	{ 192,  96,  80,  96,  48,  48 },
+	{ 224, 112,  96, 112,  56,  56 },
+	{ 256, 128, 112, 128,  64,  64 },
+	{ 288, 160, 128, 144,  80,  80 },
+	{ 320, 192, 160, 160,  96,  96 },
+	{ 352, 224, 192, 176, 112, 112 },
+	{ 384, 256, 224, 192, 128, 128 },
+	{ 416, 320, 256, 224, 144, 144 },
+	{ 448, 384, 320, 256, 160, 160 },
 	{  -1,  -1,  -1,  -1,  -1,  -1 }
 };
 
-static gint freq_table[4][3] = {
-	{44100, 22050, 11025},
-	{48000, 24000, 12000},
-	{32000, 16000, 8000}
+static const gint freq_table[4][3] = {
+	{ 44100, 22050, 11025 },
+	{ 48000, 24000, 12000 },
+	{ 32000, 16000, 8000  }
+};
+
+static const gint spf_table[6] = { 
+	48, 144, 144, 48, 144, 72 
 };
 
 static TrackerExtractData extract_data[] = {
@@ -297,18 +332,92 @@ static TrackerExtractData extract_data[] = {
 	{ NULL, NULL }
 };
 
+static void
+improve_handwritten_genre (gchar *genre)
+{
+	/* This function tries to make each first letter of each word
+	 * upper case so we conform a bit more to the standards, for
+	 * example, if it is "Fusion jazz", we want "Fussion Jazz" to
+	 * make things more consistent.
+	 */
+        gchar *p;
+	gunichar c;
+	gboolean set_next;
+
+	if (!genre) {
+		return;
+	}
+
+	c = g_utf8_get_char (genre);
+	*genre = g_unichar_toupper (c);
+
+        for (p = genre, set_next = FALSE; *p; p = g_utf8_next_char (p)) {
+		GUnicodeBreakType t;
+
+                c = g_utf8_get_char (p);
+		t = g_unichar_break_type (c);
+
+		if (set_next) {
+			*p = g_unichar_toupper (c);
+			set_next = FALSE;
+		}
+
+		switch (t) {
+		case G_UNICODE_BREAK_MANDATORY:
+		case G_UNICODE_BREAK_CARRIAGE_RETURN:
+		case G_UNICODE_BREAK_LINE_FEED:
+		case G_UNICODE_BREAK_COMBINING_MARK:
+		case G_UNICODE_BREAK_SURROGATE:
+		case G_UNICODE_BREAK_ZERO_WIDTH_SPACE:
+		case G_UNICODE_BREAK_INSEPARABLE:
+		case G_UNICODE_BREAK_NON_BREAKING_GLUE:
+		case G_UNICODE_BREAK_CONTINGENT:
+		case G_UNICODE_BREAK_SPACE:
+		case G_UNICODE_BREAK_HYPHEN:
+		case G_UNICODE_BREAK_EXCLAMATION:
+		case G_UNICODE_BREAK_WORD_JOINER:
+		case G_UNICODE_BREAK_NEXT_LINE:
+		case G_UNICODE_BREAK_SYMBOL:
+			set_next = TRUE;
+
+		case G_UNICODE_BREAK_AFTER:
+		case G_UNICODE_BREAK_BEFORE:
+		case G_UNICODE_BREAK_BEFORE_AND_AFTER:
+		case G_UNICODE_BREAK_NON_STARTER:
+		case G_UNICODE_BREAK_OPEN_PUNCTUATION:
+		case G_UNICODE_BREAK_CLOSE_PUNCTUATION:
+		case G_UNICODE_BREAK_QUOTATION:
+		case G_UNICODE_BREAK_IDEOGRAPHIC:
+		case G_UNICODE_BREAK_NUMERIC:
+		case G_UNICODE_BREAK_INFIX_SEPARATOR:
+		case G_UNICODE_BREAK_ALPHABETIC:
+		case G_UNICODE_BREAK_PREFIX:
+		case G_UNICODE_BREAK_POSTFIX:
+		case G_UNICODE_BREAK_COMPLEX_CONTEXT:
+		case G_UNICODE_BREAK_AMBIGUOUS:
+		case G_UNICODE_BREAK_UNKNOWN:
+		case G_UNICODE_BREAK_HANGUL_L_JAMO:
+		case G_UNICODE_BREAK_HANGUL_V_JAMO:
+		case G_UNICODE_BREAK_HANGUL_T_JAMO:
+		case G_UNICODE_BREAK_HANGUL_LV_SYLLABLE:
+		case G_UNICODE_BREAK_HANGUL_LVT_SYLLABLE:
+			break;
+		}
+        }
+}
+
 static char *
 read_id3v1_buffer (int fd, goffset size)
 {
-	char *buffer;
+	gchar *buffer;
 	guint bytes_read;
 	guint rc;
 
-	if (size<128) {
+	if (size < 128) {
 		return NULL;
 	}
 
-	if (lseek (fd, size-ID3V1_SIZE, SEEK_SET) < 0) {
+	if (lseek (fd, size - ID3V1_SIZE, SEEK_SET) < 0) {
 		return NULL;
 	}
 
@@ -329,11 +438,11 @@ read_id3v1_buffer (int fd, goffset size)
 				g_free (buffer);
 				return NULL;
 			}
-		}
-		else if (rc == 0)
+		} else if (rc == 0) {
 			break;
-		else
+		} else {
 			bytes_read += rc;
+		}
 	}
 	
 	return buffer;
@@ -341,20 +450,21 @@ read_id3v1_buffer (int fd, goffset size)
 
 /* Convert from UCS-2 to UTF-8 checking the BOM.*/
 static gchar *
-ucs2_to_utf8 (const gchar *data, guint len) 
+ucs2_to_utf8 (const gchar *data, 
+	      guint        len) 
 {
-        gchar    *encoding = NULL;
-        guint16   c;
-	gboolean  be;
-        gchar    *utf8 = NULL;
+        gchar *encoding = NULL;
+        guint16 c;
+	gboolean be;
+        gchar *utf8 = NULL;
 
         memcpy (&c, data, 2);
 
 	switch (c) {
         case 0xfeff:
         case 0xfffe:
-		be = (G_BYTE_ORDER == G_BIG_ENDIAN);
-		be = (c == 0xfeff) ? be : !be;
+		be = G_BYTE_ORDER == G_BIG_ENDIAN;
+		be = c == 0xfeff ? be : !be;
 		encoding = be ? "UCS-2BE" : "UCS-2LE";
                 data += 2;
                 len -= 2;
@@ -378,11 +488,13 @@ get_genre_number (const char *str, guint *genre)
 	GMatchInfo *info = NULL;
 	gchar *result = NULL;
 
-	if (!regex1)
+	if (!regex1) {
 		regex1 = g_regex_new ("\\(([0-9]+)\\)", 0, 0, NULL);
+	}
 
-	if (!regex2)
+	if (!regex2) {
 		regex2 = g_regex_new ("([0-9]+)\\z", 0, 0, NULL);
+	}
 
 	if (g_regex_match (regex1, str, 0, &info)) {
 		result = g_match_info_fetch (info, 1);
@@ -427,9 +539,9 @@ un_unsync (const unsigned char *source,
 	   unsigned char      **destination,
 	   size_t              *dest_size)
 {
-	size_t   offset  = 0;
-	gchar   *dest;
-	size_t   new_size;
+	gchar *dest;
+	size_t offset  = 0;
+	size_t new_size;
 
 	*destination = g_malloc0 (size);
 	dest         = *destination;
@@ -438,11 +550,12 @@ un_unsync (const unsigned char *source,
 	while (offset < size) {
 		*dest = source[offset];
 
-		if ((source[offset] == 0xFF) && 
-		    (source[offset+1] == 0x00)) {
+		if (source[offset] == 0xFF && 
+		    source[offset + 1] == 0x00) {
 			offset++;
 			new_size--;
 		}
+
 		dest++;
 		offset++;
 	}
@@ -450,13 +563,106 @@ un_unsync (const unsigned char *source,
 	*dest_size = new_size;
 }
 
+static char*
+get_encoding (const char *data, 
+	      gssize      size, 
+	      gboolean   *encoding_found)
+{
+	gchar *encoding = NULL;
+
+	if (encoding_found) {
+		*encoding_found = FALSE;
+	}
+	
+#ifdef HAVE_ENCA
+	const char **langs;
+	size_t s, i;
+
+	langs = enca_get_languages (&s);
+
+	for (i = 0; i < s && !encoding; i++) {
+		EncaAnalyser analyser;
+		EncaEncoding eencoding;
+
+		analyser = enca_analyser_alloc (langs[i]);
+		eencoding = enca_analyse_const (analyser, data, size);
+
+		if (enca_charset_is_known (eencoding.charset)) {
+			if (encoding_found) {
+				*encoding_found = TRUE;
+			}
+
+			encoding = g_strdup (enca_charset_name (eencoding.charset, 
+								ENCA_NAME_STYLE_ICONV));
+		}
+
+		enca_analyser_free (analyser);
+	}
+
+	free (langs);
+#endif
+
+	if (!encoding) {
+		encoding = g_strdup ("ISO-8859-1");
+	}
+
+	return encoding;
+}
+
+static gchar*
+t_convert (const gchar  *str,
+           gssize        len,
+           const gchar  *to_codeset,
+           const gchar  *from_codeset,
+           gsize        *bytes_read,
+           gsize        *bytes_written,
+           GError      **error_out)
+{
+	GError *error = NULL;
+	gchar *word;
+
+	/* g_print ("%s for %s\n", from_codeset, str); */
+
+	word = g_convert (str,
+			  len,
+			  to_codeset,
+			  from_codeset,
+			  bytes_read, 
+			  bytes_written, 
+			  &error);
+
+	if (error) {
+		gchar *encoding;
+
+		encoding = get_encoding (str, len, NULL);
+		g_free (word);
+
+		word = g_convert (str,
+				  len,
+				  to_codeset,
+				  encoding,
+				  bytes_read, 
+				  bytes_written, 
+				  error_out);
+
+		g_free (encoding);
+		g_error_free (error);
+	}
+
+	return word;
+}
+
 static gboolean
 get_id3 (const gchar *data,
 	 size_t       size,
-	 id3tag      *id3)
+	 tag_info    *id3)
 {
+#ifdef HAVE_ENCA
+	GString *s;
+	gboolean encoding_was_found;
+#endif /* HAVE_ENCA */
+	gchar *encoding;
 	const gchar *pos;
-	gchar buf[5];
 
 	if (!data) {
 		return FALSE;
@@ -472,54 +678,64 @@ get_id3 (const gchar *data,
 		return FALSE;
 	}
 
+	/* Now convert all the data separately */
 	pos += 3;
 
-	id3->title = g_convert (pos, 30,
-				"UTF-8",
-				"ISO-8859-1",
-				NULL, NULL, NULL);
+	/* We don't use our magic t_convert here because we have a better way
+	 * to collect a bit more data before we let enca loose on it for v1. */
+
+#ifdef HAVE_ENCA
+	/* Get the encoding for ALL the data we are extracting here */
+	s = g_string_new_len (pos, 30);
+	g_string_append_len (s, pos + 30, 30);
+	g_string_append_len (s, pos + 60, 30);
+
+	encoding = get_encoding (s->str, 90, &encoding_was_found);
+
+	if (encoding_was_found) {
+		id3->encoding = encoding;
+	}
+
+	g_string_free (s, TRUE);
+#else  /* HAVE_ENCA */
+	encoding = get_encoding (NULL, 0, NULL);
+#endif /* HAVE_ENCA */
+
+	id3->title = g_convert (pos, 30, "UTF-8", encoding, NULL, NULL, NULL);
 
 	pos += 30;
-	id3->artist = g_convert (pos, 30,
-				 "UTF-8",
-				 "ISO-8859-1",
-				 NULL, NULL, NULL);
+	id3->artist = g_convert (pos, 30, "UTF-8", encoding, NULL, NULL, NULL);
+
 	pos += 30;
-	id3->album = g_convert (pos, 30,
-				"UTF-8",
-				"ISO-8859-1",
-				NULL, NULL, NULL);
+	id3->album = g_convert (pos, 30, "UTF-8", encoding, NULL, NULL, NULL);
+
 	pos += 30;
-	id3->year = g_convert (pos, 4,
-			       "UTF-8",
-			       "ISO-8859-1",
-			       NULL, NULL, NULL);
+	id3->year = g_convert (pos, 4, "UTF-8", encoding, NULL, NULL, NULL);
 
 	pos += 4;
 
-	if (pos[28] != (guint)0) {
-		id3->comment = g_convert (pos, 30,
-					  "UTF-8",
-					  "ISO-8859-1",
-					  NULL, NULL, NULL);
-
+	if (pos[28] != 0) {
+		id3->comment = g_convert (pos, 30, "UTF-8", encoding, NULL, NULL, NULL);
 		id3->trackno = NULL;
 	} else {
-		id3->comment = g_convert (pos, 28,
-					  "UTF-8",
-					  "ISO-8859-1",
-					  NULL, NULL, NULL);
+		gchar buf[5];
+
+		id3->comment = g_convert (pos, 28, "UTF-8", encoding, NULL, NULL, NULL);
+
 		snprintf (buf, 5, "%d", pos[29]);
-		id3->trackno = strdup(buf);
+		id3->trackno = g_strdup (buf);
 	}
 
 	pos += 30;
-
 	id3->genre = g_strdup (get_genre_name ((guint) pos[0]));
 
 	if (!id3->genre) {
 		id3->genre = g_strdup ("");
 	}
+
+#ifndef HAVE_ENCA
+	g_free (encoding);
+#endif /* HAVE_ENCA */
 
 	return TRUE;
 }
@@ -534,7 +750,7 @@ mp3_parse_header (const gchar *data,
 	guint header;
 	gchar mpeg_ver = 0;
 	gchar layer_ver = 0;
-	guint spfp8 = 0;
+	gint spfp8 = 0;
 	guint padsize = 0;
 	gint idx_num = 0;
 	guint bitrate = 0;
@@ -545,7 +761,7 @@ mp3_parse_header (const gchar *data,
 	gint ch = 0;
 	guint frame_size;
 	guint frames = 0;
-	size_t pos = 0;
+	size_t pos;
 
 	pos = seek_pos;
 
@@ -565,7 +781,6 @@ mp3_parse_header (const gchar *data,
 					 g_strdup ("2"));
 #endif /* ENABLE_DETAILED_METADATA */
 		    mpeg_ver = MPEG_V2;
-		    spfp8 = 72;
 		    break;
 	    case 0x1800:
 #ifdef ENABLE_DETAILED_METADATA
@@ -577,7 +792,6 @@ mp3_parse_header (const gchar *data,
 					 g_strdup ("1"));
 #endif /* ENABLE_DETAILED_METADATA */
 		    mpeg_ver = MPEG_V1;
-		    spfp8 = 144;
 		    break;
 	    case 0:
 #ifdef ENABLE_DETAILED_METADATA
@@ -589,7 +803,6 @@ mp3_parse_header (const gchar *data,
 					 g_strdup ("2.5"));
 #endif /* ENABLE_DETAILED_METADATA */
 		    mpeg_ver = MPEG_V25;
-		    spfp8 = 72;
 		    break;
 	    default:
 		    break;
@@ -625,6 +838,8 @@ mp3_parse_header (const gchar *data,
 	} else {
 		idx_num = 2 + layer_ver;
 	}
+
+	spfp8 = spf_table[idx_num];
 	
 	if ((header & ch_mask) == ch_mask) {
 		ch = 1;
@@ -678,7 +893,7 @@ mp3_parse_header (const gchar *data,
 			break;
 		}
 
-		if ((!vbr_flag) && (frames > VBR_THRESHOLD)) {
+		if (!vbr_flag && frames > VBR_THRESHOLD) {
 			break;
 		}
 
@@ -692,12 +907,12 @@ mp3_parse_header (const gchar *data,
 
 	avg_bps /= frames;
 
-	if (filedata->duration==0) {
-		if ((!vbr_flag || frames > VBR_THRESHOLD) || (frames > MAX_FRAMES_SCAN)) {
+	if (filedata->duration ==0 ) {
+		if ((!vbr_flag && frames > VBR_THRESHOLD) || frames > MAX_FRAMES_SCAN) {
 			/* If not all frames scanned */
 			length = (filedata->size - filedata->id3v2_size) / (avg_bps ? avg_bps : bitrate ? bitrate : 0xFFFFFFFF) / 125;
 		} else{
-			length = 1152 * frames / (sample_rate ? sample_rate : 0xFFFFFFFF);
+			length = spfp8 * 8 * frames / (sample_rate ? sample_rate : 0xFFFFFFFF);
 		}
  
 		g_hash_table_insert (metadata,
@@ -752,38 +967,39 @@ mp3_parse (const gchar *data,
 static void
 get_id3v24_tags (const gchar *data,
 		 size_t       size,
+		 tag_info    *info,
 		 GHashTable  *metadata,
 		 file_data   *filedata)
 {
 	guint pos = 0;
-	Matches tmap[] = {
-		{"TCOP", "File:Copyright"},
-		{"TDRC", "Audio:ReleaseDate"},
-		{"TCON", "Audio:Genre"},
-		{"TIT1", "Audio:Genre"},
+	tag_matches tmap[] = {
+		{ "TCOP", "File:Copyright" },
+		{ "TDRC", "Audio:ReleaseDate" },
+		{ "TCON", "Audio:Genre" },
+		{ "TIT1", "Audio:Genre" },
 #ifdef ENABLE_DETAILED_METADATA
-		{"TENC", "DC:Publishers"},
+		{ "TENC", "DC:Publishers" },
 #endif /* ENABLE_DETAILED_METADATA */
-		{"TEXT", "Audio:Lyrics"},
-		{"TPE1", "Audio:Artist"},
-		{"TPE2", "Audio:Artist"},
-		{"TPE3", "Audio:Performer"},
+		{ "TEXT", "Audio:Lyrics" },
+		{ "TPE1", "Audio:Artist" },
+		{ "TPE2", "Audio:Artist" },
+		{ "TPE3", "Audio:Performer" },
 		/*	{"TOPE", "Audio:Artist"}, We dont' want the original artist for now */
 #ifdef ENABLE_DETAILED_METADATA
-		{"TPUB", "DC:Publishers"},
+		{ "TPUB", "DC:Publishers" },
 #endif /* ENABLE_DETAILED_METADATA */
-		{"TOAL", "Audio:Album"},
-		{"TALB", "Audio:Album"},
-		{"TLAN", "File:Language"},
-		{"TIT2", "Audio:Title"},
+		{ "TOAL", "Audio:Album" },
+		{ "TALB", "Audio:Album" },
+		{ "TLAN", "File:Language" },
+		{ "TIT2", "Audio:Title" },
 #ifdef ENABLE_DETAILED_METADATA
-		{"TIT3", "Audio:Comment"},
+		{ "TIT3", "Audio:Comment" },
 #endif /* ENABLE_DETAILED_METADATA */
-		{"TDRL", "Audio:ReleaseDate"},
-		{"TRCK", "Audio:TrackNo"},
-		{"PCNT", "Audio:PlayCount"},
-		{"TLEN", "Audio:Duration"},
-		{NULL, 0},
+		{ "TDRL", "Audio:ReleaseDate" },
+		{ "TRCK", "Audio:TrackNo" },
+		{ "PCNT", "Audio:PlayCount" },
+		{ "TLEN", "Audio:Duration" },
+		{ NULL, 0 },
 	};
 
 	while (pos < size) {
@@ -800,9 +1016,9 @@ get_id3v24_tags (const gchar *data,
 			 ((data[pos+6] & 0x7F) << 7) |
 			 ((data[pos+7] & 0x7F) << 0));
 
-		if ((pos + 10 + csize > size) ||
-		    (csize > size) ||
-		    (csize == 0)) {
+		if (pos + 10 + csize > size ||
+		    csize > size ||
+		    csize == 0) {
 			break;
 		}
 
@@ -832,28 +1048,28 @@ get_id3v24_tags (const gchar *data,
 
 				switch (data[pos + 10]) {
 				case 0x00:
-					word = g_convert (&data[pos+11],
-							  csize-1,
+					word = t_convert (&data[pos + 11],
+							  csize - 1,
 							  "UTF-8",
-							  "ISO-8859-1",
+							  info->encoding ? info->encoding : "ISO-8859-1",
 							  NULL, NULL, NULL);
 					break;
 				case 0x01 :
-					word = g_convert (&data[pos+11],
-							  csize-1,
+					word = t_convert (&data[pos + 11],
+							  csize - 1,
 							  "UTF-8",
-							  "UTF-16",
+							  info->encoding ? info->encoding : "UTF-16",
 							  NULL, NULL, NULL);
 					break;
 				case 0x02 :
-					word = g_convert (&data[pos+11],
-							  csize-1,
+					word = t_convert (&data[pos + 11],
+							  csize - 1,
 							  "UTF-8",
-							  "UTF-16BE",
+							  info->encoding ? info->encoding : "UTF-16BE",
 							  NULL, NULL, NULL);
 					break;
 				case 0x03 :
-					word = strndup (&data[pos+11], csize-1);
+					word = strndup (&data[pos + 11], csize - 1);
 					break;
 
 				default:
@@ -861,10 +1077,10 @@ get_id3v24_tags (const gchar *data,
 					 * try to convert from
 					 * iso-8859-1
 					 */
-					word = g_convert (&data[pos+11],
-							  csize-1,
+					word = t_convert (&data[pos + 11],
+							  csize - 1,
 							  "UTF-8",
-							  "ISO-8859-1",
+							  info->encoding ? info->encoding : "ISO-8859-1",
 							  NULL, NULL, NULL);
 					break;
 				}
@@ -878,6 +1094,7 @@ get_id3v24_tags (const gchar *data,
 
 						parts = g_strsplit (word, "/", 2);
 						g_free (word);
+
 						word = g_strdup (parts[0]);
 						g_strfreev (parts);
 					} else if (strcmp (tmap[i].text, "TCON") == 0) {
@@ -886,18 +1103,22 @@ get_id3v24_tags (const gchar *data,
 						if (get_genre_number (word, &genre)) {
 							g_free (word);
 							word = g_strdup (get_genre_name (genre));
-						}
+						} else {
+							if (g_ascii_strcasecmp (word, "unknown") == 0) {
+								g_free (word);
+								break;
+							} 
 
-						if (!word || strcasecmp (word, "unknown") == 0) {
-							break;
+							improve_handwritten_genre (word);
 						}
 					} else if (strcmp (tmap[i].text, "TLEN") == 0) {
 						guint32 duration;
 
 						duration = atoi (word);
 						g_free (word);
-						word = g_strdup_printf ("%d", duration/1000);
-						filedata->duration = duration/1000;
+
+						word = g_strdup_printf ("%d", duration / 1000);
+						filedata->duration = duration / 1000;
 					}
 
 					g_hash_table_insert (metadata,
@@ -922,37 +1143,44 @@ get_id3v24_tags (const gchar *data,
 			guint        offset;
 			gint         text_desc_len;
 
-			text_encode   =  data[pos + 10]; /* $xx */
-			text_language = &data[pos + 11]; /* $xx xx xx */
-			text_desc     = &data[pos + 14]; /* <text string according to encoding> $00 (00) */
+			/* $xx */
+			text_encode   =  data[pos + 10];
+
+			/* $xx xx xx */
+			text_language = &data[pos + 11];
+
+			/* <text string according to encoding> $00 (00) */
+			text_desc     = &data[pos + 14];
 			text_desc_len = strlen (text_desc);
-			text          = &data[pos + 14 + text_desc_len + 1]; /* <full text string according to encoding> */
+
+			/* <full text string according to encoding> */
+			text          = &data[pos + 14 + text_desc_len + 1]; 
 			
 			offset = 4 + text_desc_len + 1;
 
 			switch (text_encode) {
 			case 0x00:
-				word = g_convert (text,
+				word = t_convert (text,
 						  csize - offset,
 						  "UTF-8",
-						  "ISO-8859-1",
+						  info->encoding ? info->encoding : "ISO-8859-1",
 						  NULL, NULL, NULL);
 				break;
-			case 0x01 :
-				word = g_convert (text,
+			case 0x01:
+				word = t_convert (text,
 						  csize - offset,
 						  "UTF-8",
-						  "UTF-16",
+						  info->encoding ? info->encoding : "UTF-16",
 						  NULL, NULL, NULL);
 				break;
-			case 0x02 :
-				word = g_convert (text,
+			case 0x02:
+				word = t_convert (text,
 						  csize-offset,
 						  "UTF-8",
-						  "UTF-16BE",
+						  info->encoding ? info->encoding : "UTF-16BE",
 						  NULL, NULL, NULL);
 				break;
-			case 0x03 :
+			case 0x03:
 				word = g_strndup (text, csize - offset);
 				break;
 				
@@ -961,10 +1189,10 @@ get_id3v24_tags (const gchar *data,
 				 * try to convert from
 				 * iso-8859-1
 				 */
-				word = g_convert (text,
+				word = t_convert (text,
 						  csize - offset,
 						  "UTF-8",
-						  "ISO-8859-1",
+						  info->encoding ? info->encoding : "ISO-8859-1",
 						  NULL, NULL, NULL);
 				break;
 			}
@@ -1013,35 +1241,36 @@ get_id3v24_tags (const gchar *data,
 static void
 get_id3v23_tags (const gchar *data,
 		 size_t       size,
+		 tag_info    *info,
 		 GHashTable  *metadata,
 		 file_data   *filedata)
 {
-	guint	pos = 0;
-	Matches tmap[] = {
-		{"TCOP", "File:Copyright"},
-		{"TDAT", "Audio:ReleaseDate"},
-		{"TCON", "Audio:Genre"},
-		{"TIT1", "Audio:Genre"},
+	guint pos = 0;
+	tag_matches tmap[] = {
+		{ "TCOP", "File:Copyright" },
+		{ "TDAT", "Audio:ReleaseDate" },
+		{ "TCON", "Audio:Genre" },
+		{ "TIT1", "Audio:Genre" },
 #ifdef ENABLE_DETAILED_METADATA
-		{"TENC", "DC:Publishers"},
+		{ "TENC", "DC:Publishers" },
 #endif /* ENABLE_DETAILED_METADATA */
-		{"TEXT", "Audio:Lyrics"},
-		{"TPE1", "Audio:Artist"},
-		{"TPE2", "Audio:Artist"},
-		{"TPE3", "Audio:Performer"},
+		{ "TEXT", "Audio:Lyrics" },
+		{ "TPE1", "Audio:Artist" },
+		{ "TPE2", "Audio:Artist" },
+		{ "TPE3", "Audio:Performer" },
 		/*	{"TOPE", "Audio:Artist"}, We don't want the original artist for now */
 #ifdef ENABLE_DETAILED_METADATA
-		{"TPUB", "DC:Publishers"},
+		{ "TPUB", "DC:Publishers" },
 #endif /* ENABLE_DETAILED_METADATA */
-		{"TOAL", "Audio:Album"},
-		{"TALB", "Audio:Album"},
-		{"TLAN", "File:Language"},
-		{"TIT2", "Audio:Title"},
-		{"TYER", "Audio:ReleaseDate"},
-		{"TRCK", "Audio:TrackNo"},
-		{"PCNT", "Audio:PlayCount"},
-		{"TLEN", "Audio:Duration"},
-		{NULL, 0},
+		{ "TOAL", "Audio:Album" },
+		{ "TALB", "Audio:Album" },
+		{ "TLAN", "File:Language" },
+		{ "TIT2", "Audio:Title" },
+		{ "TYER", "Audio:ReleaseDate" },
+		{ "TRCK", "Audio:TrackNo" },
+		{ "PCNT", "Audio:PlayCount" },
+		{ "TLEN", "Audio:Duration" },
+		{ NULL, 0 },
 	};
 
 	while (pos < size) {
@@ -1090,30 +1319,30 @@ get_id3v23_tags (const gchar *data,
 
 				switch (data[pos + 10]) {
 				case 0x00:
-					word = g_convert (&data[pos+11],
-							  csize-1,
+					word = t_convert (&data[pos + 11],
+							  csize - 1,
 							  "UTF-8",
-							  "ISO-8859-1",
+							  info->encoding ? info->encoding : "ISO-8859-1",
 							  NULL, NULL, NULL);
 					break;
 				case 0x01 :
-/* 					word = g_convert (&data[pos+11], */
-/* 							  csize-1, */
+/* 					word = g_convert (&data[pos + 11], */
+/* 							  csize - 1, */
 /* 							  "UTF-8", */
 /* 							  "UCS-2", */
 /* 							  NULL, NULL, NULL); */
-					word = ucs2_to_utf8 (&data[pos+11],
-							     csize-1);
+					word = ucs2_to_utf8 (&data[pos + 11],
+							     csize - 1);
 					break;
 				default:
 					/* Bad encoding byte,
 					 * try to convert from
 					 * iso-8859-1
 					 */
-					word = g_convert (&data[pos+11],
-							  csize-1,
+					word = t_convert (&data[pos + 11],
+							  csize - 1,
 							  "UTF-8",
-							  "ISO-8859-1",
+							  info->encoding ? info->encoding : "ISO-8859-1",
 							  NULL, NULL, NULL);
 					break;
 				}
@@ -1127,6 +1356,7 @@ get_id3v23_tags (const gchar *data,
 
 						parts = g_strsplit (word, "/", 2);
 						g_free (word);
+
 						word = g_strdup (parts[0]);
 						g_strfreev (parts);
 					} else if (strcmp (tmap[i].text, "TCON") == 0) {
@@ -1135,10 +1365,13 @@ get_id3v23_tags (const gchar *data,
 						if (get_genre_number (word, &genre)) {
 							g_free (word);
 							word = g_strdup (get_genre_name (genre));
-						}
+						} else {
+							if (g_ascii_strcasecmp (word, "unknown") == 0) {
+								g_free (word);
+								break;
+							} 
 
-						if (!word || strcasecmp (word, "unknown") == 0) {
-							break;
+							improve_handwritten_genre (word);
 						}
 					} else if (strcmp (tmap[i].text, "TLEN") == 0) {
 						guint32 duration;
@@ -1171,20 +1404,27 @@ get_id3v23_tags (const gchar *data,
 			guint        offset;
 			gint         text_desc_len;
 			
-			text_encode   =  data[pos + 10]; /* $xx */
-			text_language = &data[pos + 11]; /* $xx xx xx */
-			text_desc     = &data[pos + 14]; /* <text string according to encoding> $00 (00) */
+			/* $xx */
+			text_encode   =  data[pos + 10]; 
+
+			/* $xx xx xx */
+			text_language = &data[pos + 11]; 
+
+			/* <text string according to encoding> $00 (00) */
+			text_desc     = &data[pos + 14]; 
 			text_desc_len = strlen (text_desc);
-			text          = &data[pos + 14 + text_desc_len + 1]; /* <full text string according to encoding> */
+
+			/* <full text string according to encoding> */
+			text          = &data[pos + 14 + text_desc_len + 1];
 			
 			offset = 4 + text_desc_len + 1;
 
 			switch (text_encode) {
 			case 0x00:
-				word = g_convert (text,
+				word = t_convert (text,
 						  csize - offset,
 						  "UTF-8",
-						  "ISO-8859-1",
+						  info->encoding ? info->encoding : "ISO-8859-1",
 						  NULL, NULL, NULL);
 				break;
 			case 0x01 :
@@ -1201,10 +1441,10 @@ get_id3v23_tags (const gchar *data,
 				 * try to convert from
 				 * iso-8859-1
 				 */
-				word = g_convert (text,
+				word = t_convert (text,
 						  csize - offset,
 						  "UTF-8",
-						  "ISO-8859-1",
+						  info->encoding ? info->encoding : "ISO-8859-1",
 						  NULL, NULL, NULL);
 				break;
 			}
@@ -1229,11 +1469,11 @@ get_id3v23_tags (const gchar *data,
 			guint        offset;
 			gint         mime_len;
 
-			text_type =  data[pos +10];
-			mime      = &data[pos +11];
+			text_type =  data[pos + 10];
+			mime      = &data[pos + 11];
 			mime_len  = strlen (mime);
-			pic_type  =  data[pos +11 + mime_len + 1];
-			desc      = &data[pos +11 + mime_len + 1 + 1];
+			pic_type  =  data[pos + 11 + mime_len + 1];
+			desc      = &data[pos + 11 + mime_len + 1 + 1];
 			
 			if (pic_type == 3 || (pic_type == 0 && filedata->albumartsize == 0)) {
 				offset = pos + 11 + mime_len + 2 + strlen (desc) + 1;
@@ -1252,41 +1492,42 @@ get_id3v23_tags (const gchar *data,
 static void
 get_id3v20_tags (const gchar *data,
 		 size_t	      size,
+		 tag_info    *info,
 		 GHashTable  *metadata,
 		 file_data   *filedata)
 {
-	guint	pos = 0;
-	Matches tmap[] = {
-		{"TAL", "Audio:Album"},
-		{"TT1", "Audio:Artist"},
-		{"TT2", "Audio:Title"},
-		{"TT3", "Audio:Title"},
+	guint pos = 0;
+	tag_matches tmap[] = {
+		{ "TAL", "Audio:Album" },
+		{ "TT1", "Audio:Artist" },
+		{ "TT2", "Audio:Title" },
+		{ "TT3", "Audio:Title" },
 #ifdef ENABLE_DETAILED_METADATA
-		{"TXT", "Audio:Comment"},
-		{"TPB", "DC:Publishers"},
+		{ "TXT", "Audio:Comment" },
+		{ "TPB", "DC:Publishers" },
 #endif /* ENABLE_DETAILED_METADATA */
-		{"WAF", "DC:Location"},
-		{"WAR", "DC:Location"},
-		{"WAS", "DC:Location"},
-		{"WAF", "DC:Location"},
-		{"WCM", "File:License"},
-		{"TYE", "Audio:ReleaseDate"},
-		{"TLA", "File:Lanuguage"},
-		{"TP1", "Audio:Artist"},
-		{"TP2", "Audio:Artist"},
-		{"TP3", "Audio:Performer"},
-		{"TEN", "Audio:Performer"},
-		{"TCO", "Audio:Genre"},
-		{"TCR", "File:Copyright"},
-		{"SLT", "Audio:Lyrics"},
-		{"TOA", "Audio:Artist"},
-		{"TOT", "Audio:Album"},
-		{"TOL", "Audio:Artist"},
+		{ "WAF", "DC:Location" },
+		{ "WAR", "DC:Location" },
+		{ "WAS", "DC:Location" },
+		{ "WAF", "DC:Location" },
+		{ "WCM", "File:License" },
+		{ "TYE", "Audio:ReleaseDate" },
+		{ "TLA", "File:Lanuguage" },
+		{ "TP1", "Audio:Artist" },
+		{ "TP2", "Audio:Artist" },
+		{ "TP3", "Audio:Performer" },
+		{ "TEN", "Audio:Performer" },
+		{ "TCO", "Audio:Genre" },
+		{ "TCR", "File:Copyright" },
+		{ "SLT", "Audio:Lyrics" },
+		{ "TOA", "Audio:Artist" },
+		{ "TOT", "Audio:Album" },
+		{ "TOL", "Audio:Artist" },
 #ifdef ENABLE_DETAILED_METADATA
-		{"COM", "Audio:Comment"},
+		{ "COM", "Audio:Comment" },
 #endif /* ENABLE_DETAILED_METADATA */
-		{"TLE", "Audio:Duration"},
-		{ NULL, 0},
+		{ "TLE", "Audio:Duration" },
+		{ NULL, 0 },
 	};
 
 	while (pos < size) {
@@ -1309,8 +1550,8 @@ get_id3v20_tags (const gchar *data,
 		i = 0;
 
 		while (tmap[i].text != NULL) {
-			if (strncmp(tmap[i].text, (const char*) &data[pos], 3) == 0) {
-				gchar * word;
+			if (strncmp (tmap[i].text, (const char*) &data[pos], 3) == 0) {
+				gchar *word;
 
 				/* This byte describes the encoding
 				 * try to convert strings to UTF-8 if
@@ -1318,10 +1559,10 @@ get_id3v20_tags (const gchar *data,
 				 */
 				switch (data[pos + 6]) {
 				case 0x00:
-					word = g_convert (&data[pos+7],
-							  csize-1,
+					word = t_convert (&data[pos + 7],
+							  csize - 1,
 							  "UTF-8",
-							  "ISO-8859-1",
+							  info->encoding ? info->encoding : "ISO-8859-1",
 							  NULL, NULL, NULL);
 					break;
 				case 0x01 :
@@ -1330,18 +1571,18 @@ get_id3v20_tags (const gchar *data,
 /* 							  "UTF-8", */
 /* 							  "UCS-2", */
 /* 							  NULL, NULL, NULL); */
-					word = ucs2_to_utf8 (&data[pos+7],
-							     csize-1);
+					word = ucs2_to_utf8 (&data[pos + 7],
+							     csize - 1);
 					break;
 				default:
 					/* Bad encoding byte,
 					 * try to convert from
 					 * iso-8859-1
 					 */
-					word = g_convert (&data[pos+7],
-							  csize-1,
+					word = t_convert (&data[pos + 7],
+							  csize - 1,
 							  "UTF-8",
-							  "ISO-8859-1",
+							  info->encoding ? info->encoding : "ISO-8859-1",
 							  NULL, NULL, NULL);
 					break;
 				}
@@ -1356,18 +1597,19 @@ get_id3v20_tags (const gchar *data,
 						s = g_strdup (word + strlen (word) + 1);
 						g_free (word);
 						word = s;
-					}
-
-					if (strcmp (tmap[i].text, "TCO") == 0) {
+					} else if (strcmp (tmap[i].text, "TCO") == 0) {
 						gint genre;
+
 						if (get_genre_number (word, &genre)) {
 							g_free (word);
 							word = g_strdup (get_genre_name (genre));
-						}
+						} else {
+							if (g_ascii_strcasecmp (word, "unknown") == 0) {
+								g_free (word);
+								break;
+							} 
 
-						if (!word || strcasecmp (word, "unknown") == 0) {
-							g_free (word);
-							break;
+							improve_handwritten_genre (word);
 						}
 					} else if (strcmp (tmap[i].text, "TLE") == 0) {
 						guint32 duration;
@@ -1393,16 +1635,17 @@ get_id3v20_tags (const gchar *data,
 
 		/* Check for embedded images */
 		if (strncmp (&data[pos], "PIC", 3) == 0) {
-			gchar          pic_type;
-			const gchar   *desc;
-			guint          offset;
-			const gchar   *mime;
+			gchar        pic_type;
+			const gchar *desc;
+			const gchar *mime;
 
 			mime      = &data[pos + 6 + 3 + 1];
 			pic_type  =  data[pos + 6 + 3 + 1 + 3];
 			desc      = &data[pos + 6 + 3 + 1 + 3 + 1];
 
 			if (pic_type == 3 || (pic_type == 0 && filedata->albumartsize == 0)) {
+				guint offset;
+
 				offset = pos + 6 + 3 + 1 + 3  + 1 + strlen (desc) + 1;
 
 				filedata->albumartmime = g_strdup (mime);
@@ -1419,18 +1662,19 @@ get_id3v20_tags (const gchar *data,
 static void
 parse_id3v24 (const gchar *data,
 	      size_t       size,
+	      tag_info    *info,
 	      GHashTable  *metadata,
 	      file_data   *filedata,
 	      size_t      *offset_delta)
 {
-	gint	unsync;
-	gint	extendedHdr;
-	gint	experimental;
-	gint	footer;
-	guint	tsize;
-	guint	pos;
-	guint	ehdrSize;
-	guint	padding;
+	gint unsync;
+	gint extendedHdr;
+	gint experimental;
+	gint footer;
+	guint tsize;
+	guint pos;
+	guint ehdrSize;
+	guint padding;
 
 	if ((size < 16) ||
 	    (data[0] != 0x49) ||
@@ -1450,7 +1694,7 @@ parse_id3v24 (const gchar *data,
 		 ((data[8] & 0x7F) << 7) |
 		 ((data[9] & 0x7F) << 0));
 
-	if ((tsize + 10 > size) || (experimental)) {
+	if (tsize + 10 > size || experimental) {
 		return;
 	}
 
@@ -1466,14 +1710,14 @@ parse_id3v24 (const gchar *data,
 	}
 
 	if (unsync) {
-		size_t  unsync_size;
-		gchar  *body;
+		size_t unsync_size;
+		gchar *body;
 
-		un_unsync (&data[pos], tsize, (unsigned char **)&body, &unsync_size);
-		get_id3v24_tags (body, unsync_size, metadata, filedata);
+		un_unsync (&data[pos], tsize, (unsigned char **) &body, &unsync_size);
+		get_id3v24_tags (body, unsync_size, info, metadata, filedata);
 		g_free (body);
 	} else {
-		get_id3v24_tags (&data[pos], tsize, metadata, filedata);
+		get_id3v24_tags (&data[pos], tsize, info, metadata, filedata);
 	}
 
 	*offset_delta = tsize + 10;
@@ -1482,24 +1726,25 @@ parse_id3v24 (const gchar *data,
 static void
 parse_id3v23 (const gchar *data,
 	      size_t       size,
+	      tag_info    *info,
 	      GHashTable  *metadata,
 	      file_data   *filedata,
 	      size_t      *offset_delta)
 {
-	gint	unsync;
-	gint	extendedHdr;
-	gint	experimental;
-	guint	tsize;
-	guint	pos;
-	guint	ehdrSize;
-	guint	padding;
+	gint unsync;
+	gint extendedHdr;
+	gint experimental;
+	guint tsize;
+	guint pos;
+	guint ehdrSize;
+	guint padding;
 
-	if ((size < 16) ||
-	    (data[0] != 0x49) ||
-	    (data[1] != 0x44) ||
-	    (data[2] != 0x33) ||
-	    (data[3] != 0x03) ||
-	    (data[4] != 0x00)) {
+	if (size < 16 ||
+	    data[0] != 0x49 ||
+	    data[1] != 0x44 ||
+	    data[2] != 0x33 ||
+	    data[3] != 0x03 ||
+	    data[4] != 0x00) {
 		return;
 	}
 
@@ -1511,7 +1756,7 @@ parse_id3v23 (const gchar *data,
 		 ((data[8] & 0x7F) << 7) |
 		 ((data[9] & 0x7F) << 0));
 
-	if ((tsize + 10 > size) || (experimental)) {
+	if (tsize + 10 > size || experimental) {
 		return;
 	}
 
@@ -1531,22 +1776,22 @@ parse_id3v23 (const gchar *data,
 
 		pos += 4 + ehdrSize;
 
-		if (padding < tsize)
+		if (padding < tsize) {
 			tsize -= padding;
-		else {
+		} else {
 			return;
 		}
 	}
 
 	if (unsync) {
-		size_t  unsync_size;
-		gchar  *body;
+		size_t unsync_size;
+		gchar *body;
 
-		un_unsync (&data[pos], tsize, (unsigned char **)&body, &unsync_size);
-		get_id3v23_tags (body, unsync_size, metadata, filedata);
+		un_unsync (&data[pos], tsize, (unsigned char **) &body, &unsync_size);
+		get_id3v23_tags (body, unsync_size, info, metadata, filedata);
 		g_free (body);
 	} else {
-		get_id3v23_tags (&data[pos], tsize, metadata, filedata);
+		get_id3v23_tags (&data[pos], tsize, info, metadata, filedata);
 	}
 
 	*offset_delta = tsize + 10;
@@ -1554,21 +1799,22 @@ parse_id3v23 (const gchar *data,
 
 static void
 parse_id3v20 (const gchar *data,
-	      size_t	      size,
+	      size_t	   size,
+	      tag_info    *info,
 	      GHashTable  *metadata,
 	      file_data   *filedata,
 	      size_t      *offset_delta)
 {
-	gint	unsync;
-	guint	tsize;
-	guint	pos;
+	gint unsync;
+	guint tsize;
+	guint pos;
 
-	if ((size < 16) ||
-	    (data[0] != 0x49) ||
-	    (data[1] != 0x44) ||
-	    (data[2] != 0x33) ||
-	    (data[3] != 0x02) ||
-	    (data[4] != 0x00)) {
+	if (size < 16 ||
+	    data[0] != 0x49 ||
+	    data[1] != 0x44 ||
+	    data[2] != 0x33 ||
+	    data[3] != 0x02 ||
+	    data[4] != 0x00) {
 		return;
 	}
 
@@ -1578,20 +1824,21 @@ parse_id3v20 (const gchar *data,
 		 ((data[8] & 0x7F) << 07) |
 		 ((data[9] & 0x7F) << 00));
 
-	if (tsize + 10 > size)	{
+	if (tsize + 10 > size) {
 		return;
 	}
+
 	pos = 10;
 
 	if (unsync) {
 		size_t  unsync_size;
 		gchar  *body;
 
-		un_unsync (&data[pos], tsize, (unsigned char **)&body, &unsync_size);
-		get_id3v20_tags (body, unsync_size, metadata, filedata);
+		un_unsync (&data[pos], tsize, (unsigned char **) &body, &unsync_size);
+		get_id3v20_tags (body, unsync_size, info, metadata, filedata);
 		g_free (body);
 	} else {
-		get_id3v20_tags (&data[pos], tsize, metadata, filedata);
+		get_id3v20_tags (&data[pos], tsize, info, metadata, filedata);
 	}
 
 	*offset_delta = tsize + 10;
@@ -1600,17 +1847,33 @@ parse_id3v20 (const gchar *data,
 static goffset
 parse_id3v2 (const gchar *data,
 	     size_t	  size,
+	     tag_info    *info,
 	     GHashTable  *metadata,
 	     file_data   *filedata)
 {
 	gboolean done = FALSE;
-	size_t   offset = 0;
+	size_t offset = 0;
 
 	do {
 		size_t offset_delta = 0;
-		parse_id3v24 (data+offset, size-offset, metadata, filedata, &offset_delta);
-		parse_id3v23 (data+offset, size-offset, metadata, filedata, &offset_delta);
-		parse_id3v20 (data+offset, size-offset, metadata, filedata, &offset_delta);		
+
+		parse_id3v24 (data + offset, 
+			      size - offset, 
+			      info, 
+			      metadata, 
+			      filedata, 
+			      &offset_delta);
+		parse_id3v23 (data + offset, 
+			      size - offset, 
+			      info, 
+			      metadata, 
+			      filedata, 
+			      &offset_delta);
+		parse_id3v20 (data + offset, 
+			      size - offset, 
+			      info, metadata, 
+			      filedata, 
+			      &offset_delta);
 
 		if (offset_delta == 0) {
 			done = TRUE;
@@ -1628,14 +1891,14 @@ static void
 extract_mp3 (const gchar *filename,
 	     GHashTable  *metadata)
 {
-	int	     fd;
-	void	    *buffer;
-	void        *id3v1_buffer;
-	goffset      size;
-	goffset      buffer_size;
-	id3tag	     info;
-	goffset      audio_offset;
-	file_data    filedata;
+	int fd;
+	void *buffer;
+	void *id3v1_buffer;
+	goffset size;
+	goffset buffer_size;
+	tag_info info;
+	goffset audio_offset;
+	file_data filedata;
 
 	info.title = NULL;
 	info.artist = NULL;
@@ -1644,6 +1907,7 @@ extract_mp3 (const gchar *filename,
 	info.comment = NULL;
 	info.genre = NULL;
 	info.trackno = NULL;
+	info.encoding = NULL;
 
 	filedata.size = 0;
 	filedata.id3v2_size = 0;
@@ -1700,9 +1964,9 @@ extract_mp3 (const gchar *filename,
 	}
 
 	if (!get_id3 (id3v1_buffer, ID3V1_SIZE, &info)) {
-		/* Do nothing? */
+		/* Do nothing ? */
 	}
-	
+
 	g_free (id3v1_buffer);
 
 	if (!tracker_is_empty_string (info.title)) {
@@ -1749,6 +2013,20 @@ extract_mp3 (const gchar *filename,
 				     tracker_escape_metadata (info.trackno));		
 	}
 
+	/* Get other embedded tags */
+	audio_offset = parse_id3v2 (buffer, 
+				    buffer_size, 
+				    &info, 
+				    metadata, 
+				    &filedata);
+
+	/* Get mp3 stream info */
+	mp3_parse (buffer, 
+		   buffer_size, 
+		   audio_offset, 
+		   metadata, 
+		   &filedata);
+
 	g_free (info.title);
 	g_free (info.year);
 	g_free (info.album);
@@ -1756,12 +2034,7 @@ extract_mp3 (const gchar *filename,
 	g_free (info.comment);
 	g_free (info.trackno);
 	g_free (info.genre);
-
-	/* Get other embedded tags */
-	audio_offset = parse_id3v2 (buffer, buffer_size, metadata, &filedata);
-
-	/* Get mp3 stream info */
-	mp3_parse (buffer, buffer_size, audio_offset, metadata, &filedata);
+	g_free (info.encoding);
 
 #ifdef HAVE_GDKPIXBUF
 	tracker_process_albumart (filedata.albumartdata, filedata.albumartsize, filedata.albumartmime,
@@ -1783,10 +2056,14 @@ extract_mp3 (const gchar *filename,
 
 	/* Check that we have the minimum data. FIXME We should not need to do this */
 	if (!g_hash_table_lookup (metadata, "Audio:Title")) {
-		gchar  *basename = g_filename_display_basename (filename);
-		gchar **parts    = g_strsplit (basename, ".", -1);
-		gchar  *title    = g_strdup (parts[0]);
+		gchar  *basename;
+		gchar **parts;
+		gchar  *title;
 		
+		basename = g_filename_display_basename (filename);
+		parts = g_strsplit (basename, ".", -1);
+		title = g_strdup (parts[0]);
+
 		g_strfreev (parts);
 		g_free (basename);
 		
@@ -1802,7 +2079,6 @@ extract_mp3 (const gchar *filename,
 #ifndef G_OS_WIN32
 	munmap (buffer, buffer_size);
 #endif
-
 }
 
 TrackerExtractData *

@@ -285,7 +285,7 @@ main (gint argc, gchar *argv[])
 	TrackerConfig *config;
 	TrackerLanguage *language;
 	TrackerIndexer *indexer;
-	TrackerDBManagerFlags flags = 0;
+	TrackerDBManagerFlags flags = TRACKER_DB_MANAGER_FORCE_NO_REINDEX;
 	GOptionContext *context;
 	GError *error = NULL;
 	gchar *filename;
@@ -363,7 +363,10 @@ main (gint argc, gchar *argv[])
 		flags |= TRACKER_DB_MANAGER_LOW_MEMORY_MODE;
 	}
 
-	tracker_db_manager_init (flags, NULL, FALSE);
+	if (!tracker_db_manager_init (flags, NULL, FALSE, NULL)) {
+		return EXIT_FAILURE;
+        }
+
 	if (!tracker_db_index_manager_init (0,
 					    tracker_config_get_min_bucket_count (config),
 					    tracker_config_get_max_bucket_count (config))) {

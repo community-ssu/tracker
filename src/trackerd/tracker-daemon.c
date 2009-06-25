@@ -45,8 +45,8 @@
 
 #define TRACKER_TYPE_G_STRV_ARRAY  (dbus_g_type_get_collection ("GPtrArray", G_TYPE_STRV))
 
-/* In seconds (5 minutes for now) */
-#define STATS_CACHE_LIFETIME 300
+/* In seconds (2 minutes for now) */
+#define STATS_CACHE_LIFETIME 120
 
 typedef struct {
 	TrackerConfig	 *config;
@@ -159,7 +159,7 @@ indexer_started_cb (DBusGProxy *proxy,
 		return;
 	}
 
-	g_message ("Starting statistics cache timeout");
+	g_debug ("Starting statistics cache timeout");
 	priv->stats_cache_timeout_id = 
 		g_timeout_add_seconds (STATS_CACHE_LIFETIME,
 				       stats_cache_timeout,
@@ -184,7 +184,7 @@ indexer_finished_cb (DBusGProxy *proxy,
 		return;
 	}
 
-	g_message ("Stopping statistics cache timeout");
+	g_debug ("Stopping statistics cache timeout");
 	g_source_remove (priv->stats_cache_timeout_id);
 	priv->stats_cache_timeout_id = 0;
 }
@@ -420,6 +420,7 @@ stats_cache_get_latest (void)
 	GHashTable         *services;
 	GHashTable         *values;
 	GHashTableIter      iter;
+	GSList             *parent_services, *l;
 	gpointer            key, value;
 	guint               i;
 	const gchar        *services_to_fetch[3] = { 
@@ -429,8 +430,6 @@ stats_cache_get_latest (void)
 	};
 
 	/* Set up empty list of services because SQL queries won't give us 0 items. */
-	g_message ("Requesting statistics from database for an accurate signal");
-
 	iface = tracker_db_manager_get_db_interface (TRACKER_DB_COMMON);
 	result_set = tracker_data_manager_exec_proc (iface, "GetServices", 0);
 	services = tracker_dbus_query_result_to_hash_table (result_set);
@@ -456,7 +455,7 @@ stats_cache_get_latest (void)
 	/* Populate with real stats */
 	for (i = 0; services_to_fetch[i]; i++) {		
 		TrackerDBInterface *iface;
-		GPtrArray          *stats, *parent_stats;
+		GPtrArray          *stats; 
 
 		iface = tracker_db_manager_get_db_interface_by_service (services_to_fetch[i]);
 
@@ -471,18 +470,47 @@ stats_cache_get_latest (void)
 			g_object_unref (result_set);
 		}
 
-		result_set = tracker_data_manager_exec_proc (iface, "GetStatsForParents", 0);
-		parent_stats = tracker_dbus_query_result_to_ptr_array (result_set);
-
-		if (result_set) {
-			g_object_unref (result_set);
-		}
-		
 		g_ptr_array_foreach (stats, stats_cache_filter_dups_func, values);
-		g_ptr_array_foreach (parent_stats, stats_cache_filter_dups_func, values);
-
-		tracker_dbus_results_ptr_array_free (&parent_stats);
 		tracker_dbus_results_ptr_array_free (&stats);
+	}
+
+	/*
+	 * For each of the top services, add the items of their subservices 
+	 * (calculated in the previous GetStats)
+	 */
+	parent_services = tracker_ontology_get_parent_services ();
+
+	for (l = parent_services; l; l = l->next) {
+		GArray      *subcategories;
+		const gchar *name;
+		gint         children = 0;
+
+		name = tracker_service_get_name (l->data);
+		
+		if (!name) {
+			continue;
+		}
+
+		subcategories = tracker_ontology_get_subcategory_ids (name);
+
+		if (!subcategories) {
+			continue;
+		}
+
+		for (i = 0; i < subcategories->len; i++) {
+			const gchar *subclass;
+			gpointer     p;
+			gint         id;
+
+			id = g_array_index (subcategories, gint, i);
+			subclass = tracker_ontology_get_service_by_id (id);
+			p = g_hash_table_lookup (values, subclass);
+			children += GPOINTER_TO_INT (p);
+		}
+
+		g_hash_table_replace (values, 
+				      g_strdup (name), 
+				      GINT_TO_POINTER (children));
 	}
 
 	return values;

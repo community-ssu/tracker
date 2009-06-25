@@ -11,3 +11,6 @@ rm -rf /home/user/.local/share/tracker/
 
 # Remove the configuration (recreated on next start)
 rm -rf /home/user/.config/tracker/
+
+# Remove all thumbnails created
+rm -rf /home/user/.thumbnails/

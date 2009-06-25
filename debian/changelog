@@ -1,3 +1,149 @@
+tracker (0.6.95-8maemo1) stable; urgency=low
+
+  * Fixes: NB#119318, Russian mp3 id tag is displayed incorrectly...
+  * Fixes: NB#123591, Unknown genre displayed twice for the attached clips
+  * Fixes: NB#100123, Image:Date is empty for some of the images
+  * Fixes: NB#123030, Attached clip cannot be opened through music>arti...
+  * Fixes trackerd crash when double freeing a device in the processor
+  * Fixes trackerd crash when using strcasecmp with NULL in metadata API
+  * Fixes notification of removed URIs to thumbnailer from indexer
+  * Fixes compiler warnings
+  * Fixes MP3 genres so we are more strict with the exact strings
+  * Fixes MP3 genres which are handwritten to use leading uppercase
+  * Fixes compilation error if you don't have GdkPixbuf installed
+  * Updates tracker-stats cache timeout from 5 minutes to 2 minutes
+  * Updates patch 07 to ignore usual symbian directories in memcards
+  * Updates tracker-cud.sh to remove all thumbnails on user data reset
+  * Improves the design in the metadata handling for the indexer/modules
+  * Improve error handling/logging in sqlite created functions.
+  * Adds dependency on libenca
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 24 June 2009 17:00:00 +0000
+
+tracker (0.6.95-7maemo2) stable; urgency=low
+
+  * Fixes 23tracker script to include & after trackerd command
+
+ -- Martyn Russell <martyn@imendio.com>  Thu, 18 June 2009 11:10:00 +0000
+
+tracker (0.6.95-7maemo1) stable; urgency=low
+
+  * Fixes: NB#119318, Russian mp3 id tag is displayed incorrectly...
+  * Fixes multiple instances of trackerd caused by use of run-standalone.sh
+  * Adds patch #12 which monitors the cover state to switch database modes
+  * Adds libenca support for determining encodings from data snippets
+  * Improves trackerd get statistics speed significantly.
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 17 June 2009 17:45:00 +0000
+
+tracker (0.6.95-6maemo1) stable; urgency=low
+
+  * Fixes: NB#107116, Music:Duration displayed as -:- in library for...
+  * Fixes: NB#117593, Top most played and Never played songs not listed...
+  * Fixes: NB#119230, tracker-extract: memory management shall be improved
+  * Fixes: NB#121542, trackerd[1460]: GLIB CRITICAL ** GLib-GIO - g_file...
+  * Moved 31tracker to 23tracker, so we start earlier
+  * Removed DISTINCT keyword from GetByServiceType, should speed things up
+  * Added GError handling to crawler GIO operations
+  * Added empty tracker-doc package to fill sysint requirements.
+  * Added tracker-extract code to set /proc/self/oom_adj to 15.
+
+ -- Martyn Russell <martyn@imendio.com>  Tue, 16 June 2009 17:30:00 +0000
+
+tracker (0.6.95-5maemo1) stable; urgency=low
+
+  * Fixes: NB#120568, Found tracker indexer crash after doing clear...
+  * Fixes: NB#120985, tracker-files is not lisitng files,seems tracker...
+  * Fixes: NB#120883, duration of playlists container is improper
+  * Fixes typo in GStreamer extractor for "Video:FrameRate"
+  * Added preventative in indexer for reindexing DBs, daemon does this
+  * Updated tracker.sh to use regular commands, instead of dsme
+  * Updated tracker.sh to not specify sleep time, was 5s, now 7s in config
+  * Updated utils/sqlite/query to handle multiple queries
+
+ -- Martyn Russell <martyn@imendio.com>  Mon,  8 June 2009 17:30:00 +0000
+
+tracker (0.6.95-4maemo1) stable; urgency=low
+
+  * Fixes: NB#117899, iTunes+ m4a song cover art is not shown
+  * Fixes: NB#119840, Music-Artists -Library view not displayed by...
+  * Fixes: NB#119384, duration is not extracted for the  wmv file of...
+  * Fixes race condition when setting DB mode between daemon/indexer
+  * Added GError handling libtracker-data so we log errors
+
+ -- Martyn Russell <martyn@imendio.com>  Fri,  5 June 2009 12:00:00 +0000
+
+tracker (0.6.95-3maemo3) stable; urgency=low
+
+  * Fixes patch 02 watch dir roots, don't overwrite with $HOME
+
+ -- Martyn Russell <martyn@imendio.com>  Thu,  4 June 2009 17:30:00 +0000
+
+tracker (0.6.95-3maemo2) stable; urgency=low
+
+  * Fixes: NB#114880, tracker-extract crashed while extracting a video
+  * Fixes: NB#95873, Duration not extracted for mp2 and aac files
+  * Fixes: NB#96142, Video library : Duration of the Video clips is not...
+  * Fixes: GB#584809, Remove tracker-thumbnailer manpage 
+  * Moved back startup script later in the sequence.
+
+ -- Martyn Russell <martyn@imendio.com>  Thu,  4 June 2009 16:00:00 +0000
+
+tracker (0.6.95-3maemo1) stable; urgency=low
+
+  * Fixes: GB#584547, Hungarian stopwords files encoding is bad
+  * Fixes state machine which could get stuck in PENDING state
+  * Fixes processor so we don't miss every OTHER device.
+  * Added tagreadbin use for GStreamer extractions, much faster
+  * Added "Fast" and "Safe" modes, "Fast" is REALLY fast.
+  * Updated patch 03 to now ignore /home MMC.
+  * Updated patch 02 to now not include /home/user/MyDocs as duplicate
+  * Added TrackerDBInterface invalidation scheme.
+
+ -- Martyn Russell <martyn@imendio.com>  Thu,  4 June 2009 12:00:00 +0000
+
+tracker (0.6.95-2maemo1) stable; urgency=low
+
+  * Fixes: NB#118578, Getting metadata with mafw_playlist_get_items_md...
+  * Fixes: NB#119123, tracker-indexer is crashing.
+  * Fixes: NB#110584, Image:HasKeywords cannot be used for ImageViewer...
+  * Fixes: NB#100123, Image:Date is empty for some of the images	
+  * Fixes: NB#119507, got glib message while running tracker-unique
+  * Fixes: NB#107577, Video library showing the deleted clip after...
+  * Moved 31tracker to 14tracker, so it is started earlier on boot
+  * Fixes critical warning with tracker_processor_mount_point_added()
+  * Fixes crashing while creating DBs due to no disk space
+  * Fixes crashing in trackerd when started in readonly mode
+  * Fixes 2 JPEG extractor memory leaks
+  * Fixes 1 pragma memory leak in tracker-db-manager
+  * Adds File:Added metadata field representing DB insertion time
+  * Adds check for ontology changes to force reindex (e.g. adding OGG)
+  * Reduces indexer pause time from 5 seconds to 2 seconds
+  * Reduces daemon monitor cache timeout from 2 seconds to 1 second
+  * Reduces daemon processor queue timeout from 2 seconds to instantly
+  * Reduces debugging and logging
+  * Reworks the TrackerProcessor for tracker_status_get_is_initial_check()
+
+ -- Martyn Russell <martyn@imendio.com>  Mon,  1 June 2009 17:30:00 +0000
+
+tracker (0.6.95-1maemo2) stable; urgency=low
+
+  * Fixes regression after adding strict mime types for video ontology
+  * Fixes regression after adding strict mime types for audio ontology
+
+ -- Martyn Russell <martyn@imendio.com>  Wed, 27 May 2009 10:30:00 +0000
+
+tracker (0.6.95-1maemo1) stable; urgency=low
+
+  * Fixes: NB#112133, trackerd-11-1386.rcore.lzo crashed
+  * Fixes: NB#114082, Tracker source returns wrong metadata for attached...
+  * Fixes: NB#118003, OGG files listed in Mediaplayer
+  * Fixes indexer warnings closing contexts inserting with collated data
+  * Fixes MetadataValue so it can be empty to, avoid critical warnings
+  * Fixes play list duration handling
+
+ -- Martyn Russell <martyn@imendio.com>  Tue, 26 May 2009 14:00:00 +0000
+
 tracker (0.6.94-11maemo1) stable; urgency=low
 
   * Fixes: NB#110584, Image:HasKeywords cannot be used for ImageViewer...

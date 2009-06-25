@@ -13,7 +13,7 @@ AC_PREREQ(2.59)
 # set TRACKER_BINARY_AGE and TRACKER_INTERFACE_AGE to 0.
 m4_define([tracker_major_version], [0])
 m4_define([tracker_minor_version], [6])
-m4_define([tracker_micro_version], [94])
+m4_define([tracker_micro_version], [95])
 m4_define([tracker_interface_age], [0])
 m4_define([tracker_binary_age],
           [m4_eval(100 * tracker_minor_version + tracker_micro_version)])
@@ -38,7 +38,7 @@ m4_define([tracker_lt_current_minus_age],
 # for Tracker.
 #
 # TRACKER_BINARY_VERSION=$TRACKER_MAJOR_VERSION.$TRACKER_MINOR_VERSION.$LT_CURRENT
-m4_define([tracker_binary_version], [0.6.92])
+m4_define([tracker_binary_version], [0.6.95])
 
 AC_INIT([tracker], [tracker_version],
         [http://bugzilla.gnome.org/enter_bug.cgi?product=tracker],
@@ -203,6 +203,17 @@ AC_SUBST(GCONF_LIBS)
 
 AM_CONDITIONAL(HAVE_GCONF, test "$have_gconf" = "yes")
 
+# Check for enca, detects defect Russian or Cyrillic language specifics in mp3s
+PKG_CHECK_MODULES(ENCA, [enca >= 1.9], have_enca=yes, have_enca=no)
+AC_SUBST(ENCA_CFLAGS)
+AC_SUBST(ENCA_LIBS)
+
+AM_CONDITIONAL(HAVE_ENCA, test "$have_enca" = "yes")
+
+if test x$have_enca == "xyes"; then
+  AC_DEFINE(HAVE_ENCA, 1, [Enca language detection aid])
+fi
+
 # Check for Raptor
 PKG_CHECK_MODULES(RAPTOR, [raptor >= 1.4.17], have_raptor=yes, have_raptor=no)
 AC_SUBST(RAPTOR_CFLAGS)
@@ -345,6 +356,20 @@ AC_ARG_ENABLE(detailed-metadata,
 
 if test "x$enable_detailed_metadata" != "xno"; then
   AC_DEFINE(ENABLE_DETAILED_METADATA, 1, [Define if we want detailed metadata in the database])
+fi
+
+####################################################################
+# Use tagreadbin in gstreamer extraction?
+####################################################################
+
+AC_ARG_ENABLE(gstreamer-tagreadbin, 
+	      AS_HELP_STRING([--enable-gstreamer-tagreadbin],
+			     [enable tagreadbin in gstreamer [[default=no]]]),
+			     [enable_tagreadbin=yes],
+			     [enable_tagreadbin=no])
+
+if test "x$enable_tagreadbin" != "xno"; then
+  AC_DEFINE(TRACKER_EXTRACT_GSTREAMER_USE_TAGREADBIN, 1, [Use tagreadbin in gstreamer extraction])
 fi
 
 ##################################################################
@@ -1438,6 +1463,7 @@ AC_CONFIG_FILES([
 	tests/tracker-extract/Makefile
 	utils/Makefile
 	utils/albumart/Makefile
+	utils/mp3-genre-leading-uppercase/Makefile
 	utils/qdbm/Makefile
 	utils/sqlite/Makefile
 	utils/tracker-fts/Makefile
@@ -1457,6 +1483,7 @@ Build Configuration:
 
 	Enable unit tests:			$have_unit_tests
 	Enable unac accent stripper:	  	$have_unac
+	Enable enca encoding detection:	  	$have_enca
 	Enable full text search:               	$enable_fts
 	Enable detailed metadata:              	$enable_detailed_metadata
 
@@ -1484,7 +1511,7 @@ Metadata Extractors:
 	Support MS & Open Office:	        $have_libgsf
 	Support XML / HTML:		        $have_libxml2
 	Support embedded / sidecar XMP:		$have_exempi
-	Support video formats:			$have_video_handler ($have_video_handler_app)
+	Support video formats:			$have_video_handler ($have_video_handler_app) (tagreadbin: $enable_tagreadbin)
 	Support helix formats (RPM/RM/etc):     $have_gstreamer_helix
 	Support MP3 album art (w/ GdkPixbuf):	$have_gdkpixbuf
 	Support playlists (w/ Totem):           $have_playlist

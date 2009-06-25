@@ -55,7 +55,8 @@ typedef enum {
 	TRACKER_DB_MANAGER_FORCE_REINDEX    = 1 << 1,
 	TRACKER_DB_MANAGER_REMOVE_CACHE     = 1 << 2,
 	TRACKER_DB_MANAGER_LOW_MEMORY_MODE  = 1 << 3,
-	TRACKER_DB_MANAGER_REMOVE_ALL       = 1 << 4
+	TRACKER_DB_MANAGER_REMOVE_ALL       = 1 << 4,
+	TRACKER_DB_MANAGER_FORCE_NO_REINDEX = 1 << 5
 } TrackerDBManagerFlags;
 
 #define TRACKER_DB_FOR_FILE_SERVICE	"Files"
@@ -64,9 +65,10 @@ typedef enum {
 
 GType	     tracker_db_get_type			    (void) G_GNUC_CONST;
 
-void	     tracker_db_manager_init			    (TrackerDBManagerFlags  flags,
+gboolean     tracker_db_manager_init			    (TrackerDBManagerFlags  flags,
 							     gboolean		   *first_time,
-							     gboolean 		    shared_cache);
+							     gboolean 		    shared_cache,
+							     const gchar           *profile_name);
 void	     tracker_db_manager_shutdown		    (void);
 
 void	     tracker_db_manager_remove_all		    (void);
