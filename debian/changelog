@@ -10,8 +10,8 @@ tracker (0.6.95-9maemo1) stable; urgency=low
   * Fixes memory leak in imported libinotify.
   * Fixes 2 mallocs which were unused in the indexer gathering metadata
   * Removes unused code libtracker-data/tracker-data-file-info.[ch]
-	
- -- Martyn Russell <martyn@imendio.com>  Fri, 26 June 2009 18:00:00 +0000
+
+ -- Martyn Russell <martyn@lanedo.com>  Fri, 26 June 2009 18:00:00 +0000
 
 tracker (0.6.95-8maemo1) stable; urgency=low
 
