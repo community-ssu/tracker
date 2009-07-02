@@ -2,7 +2,6 @@ tracker (0.6.95-9maemo1) stable; urgency=low
 
   * Fixes: NB#121377, Tracker goes to pending state when corrupted mmc...
   * Fixes: NB#124920, Tracker sorting is incorrect
-  * Fixes: NB#124822, [S3 Proposal] Tracker not finding large video file
   * Fixes: NB#125050, got tracker criticals
   * Fixes: NB#124483, trackerd[1252]: GLIB CRITICAL ** Tracker - tracker...
   * Fixes nfs lock function so we don't call stat() twice.
