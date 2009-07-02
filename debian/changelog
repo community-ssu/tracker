@@ -1,3 +1,9 @@
+tracker (0.6.95-9maemo2) unstable; urgency=low
+
+  * Fixed debian/changelog to provide a satisfactory integration.
+	
+ -- Mikael Ottela <mikael.ottela@ixonos.com>  Thu, 2 Jul 2009 12:00:00 +0000
+
 tracker (0.6.95-9maemo1) stable; urgency=low
 
   * Fixes: NB#121377, Tracker goes to pending state when corrupted mmc...
