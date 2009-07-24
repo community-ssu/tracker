@@ -1,3 +1,23 @@
+tracker (0.6.95-9maemo2) unstable; urgency=low
+
+  * Fixed debian/changelog to provide a satisfactory integration.
+	
+ -- Mikael Ottela <mikael.ottela@ixonos.com>  Thu, 2 Jul 2009 12:00:00 +0000
+
+tracker (0.6.95-9maemo1) stable; urgency=low
+
+  * Fixes: NB#121377, Tracker goes to pending state when corrupted mmc...
+  * Fixes: NB#124920, Tracker sorting is incorrect
+  * Fixes: NB#125050, got tracker criticals
+  * Fixes: NB#124483, trackerd[1252]: GLIB CRITICAL ** Tracker - tracker...
+  * Fixes nfs lock function so we don't call stat() twice.
+  * Fixes 100% CPU with g_idle_add which continuously runs when paused
+  * Fixes memory leak in imported libinotify.
+  * Fixes 2 mallocs which were unused in the indexer gathering metadata
+  * Removes unused code libtracker-data/tracker-data-file-info.[ch]
+
+ -- Martyn Russell <martyn@lanedo.com>  Fri, 26 June 2009 18:00:00 +0000
+
 tracker (0.6.95-8maemo1) stable; urgency=low
 
   * Fixes: NB#119318, Russian mp3 id tag is displayed incorrectly...
