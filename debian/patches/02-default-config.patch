@@ -1,5 +1,5 @@
 diff --git a/src/libtracker-common/tracker-config.c b/src/libtracker-common/tracker-config.c
-index c0dfbf3..6bf4cee 100644
+index c0dfbf3..51a19d0 100644
 --- a/src/libtracker-common/tracker-config.c
 +++ b/src/libtracker-common/tracker-config.c
 @@ -73,7 +73,7 @@
@@ -30,16 +30,17 @@ index c0dfbf3..6bf4cee 100644
  
  typedef struct _TrackerConfigPrivate TrackerConfigPrivate;
  
-@@ -755,14 +755,25 @@ config_create_with_defaults (GKeyFile *key_file,
+@@ -755,14 +755,26 @@ config_create_with_defaults (GKeyFile *key_file,
  			     gboolean  overwrite)
  {
  	gchar	     *language;
 -	const gchar  *watch_directory_roots[2] = { NULL, NULL };
  	const gchar  *empty_string_list[] = { NULL };
-+	const gchar  *no_watch_directory_roots[4] = {  
++	const gchar  *no_watch_directory_roots[5] = {  
 +		"$HOME/MyDocs/core-dumps/",
 +		"$HOME/MyDocs/cities/", 
 +		"$HOME/MyDocs/.sounds/Ringtones/", 
++		"$HOME/MyDocs/tmp/",
 +		NULL
 +	};
 +	const gchar  *watch_directory_roots[6] = {
@@ -59,7 +60,7 @@ index c0dfbf3..6bf4cee 100644
  	g_message ("Loading defaults into GKeyFile...");
  
  	/* General */
-@@ -818,7 +829,8 @@ config_create_with_defaults (GKeyFile *key_file,
+@@ -818,7 +830,8 @@ config_create_with_defaults (GKeyFile *key_file,
  
  	if (overwrite || !g_key_file_has_key (key_file, GROUP_WATCHES, KEY_NO_WATCH_DIRECTORY_ROOTS, NULL)) {
  		g_key_file_set_string_list (key_file, GROUP_WATCHES, KEY_NO_WATCH_DIRECTORY_ROOTS,

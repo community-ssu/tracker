@@ -1,3 +1,9 @@
+tracker (0.6.95-10maemo2) stable; urgency=low
+
+  * Fixes: NB#131565 Crash in tracker-extract streaming flash
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Fri, 7 Aug 2009 11:19:00 +0000
+
 tracker (0.6.95-10maemo1) stable; urgency=low
 
   * Fixes: NB#128713, Period in media filenames -TRUE
