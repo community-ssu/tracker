@@ -1,3 +1,9 @@
+tracker (0.6.95-13maemo1) stable; urgency=low
+
+  * Fixes: NB#132414, tracker-extract crashes in tracker_utils_...
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Tue, 11 Aug 2009 17:38:00 +0000
+
 tracker (0.6.95-12maemo1) stable; urgency=low
 
   * Fixes: NB#126773, tracker-extract spam syslog
