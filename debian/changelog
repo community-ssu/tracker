@@ -1,6 +1,13 @@
+tracker (0.6.95-11maemo2) stable; urgency=low
+
+  * unreleased (remove this line)
+  * Fixes: NB#131951, Ignoring extra directories in Maemo patches
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Fri, 11 Aug 2009 11:38:00 +0000
+
 tracker (0.6.95-11maemo1) stable; urgency=low
 
-  * Fixes: NB#131222 Crash in tracker-extract reading TIFF
+  * Fixes: NB#131222, Crash in tracker-extract reading TIFF
 
  -- Ivan Frade <ivan.frade@nokia.com>  Fri, 10 Aug 2009 17:48:00 +0000
 
