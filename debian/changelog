@@ -1,3 +1,22 @@
+tracker (0.6.95-11maemo1) stable; urgency=low
+
+  * Fixes: NB#131222 Crash in tracker-extract reading TIFF
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Fri, 10 Aug 2009 17:48:00 +0000
+
+tracker (0.6.95-10maemo2) stable; urgency=low
+
+  * Fixes: NB#131565 Crash in tracker-extract streaming flash
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Fri, 7 Aug 2009 11:19:00 +0000
+
+tracker (0.6.95-10maemo1) stable; urgency=low
+
+  * Fixes: NB#128713, Period in media filenames -TRUE
+  * Fixes: NB#126260, 01.jpg and wavelength04.jpg has no Image:Date...
+
+ -- Martyn Russell <martyn@lanedo.com>  Fri, 31 July 2009 11:00:00 +0000
+
 tracker (0.6.95-9maemo2) unstable; urgency=low
 
   * Fixed debian/changelog to provide a satisfactory integration.
