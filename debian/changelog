@@ -1,9 +1,9 @@
-tracker (0.6.95-11maemo2) stable; urgency=low
+tracker (0.6.95-12maemo1) stable; urgency=low
 
-  * unreleased (remove this line)
+  * Fixes: NB#126773, tracker-extract spam syslog
   * Fixes: NB#131951, Ignoring extra directories in Maemo patches
 
- -- Ivan Frade <ivan.frade@nokia.com>  Fri, 11 Aug 2009 11:38:00 +0000
+ -- Ivan Frade <ivan.frade@nokia.com>  Tue, 11 Aug 2009 13:38:00 +0000
 
 tracker (0.6.95-11maemo1) stable; urgency=low
 
