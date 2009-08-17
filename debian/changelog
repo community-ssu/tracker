@@ -1,3 +1,10 @@
+tracker (0.6.95-14maemo1) stable; urgency=low
+
+  * Fixes: NB#125991, Image Viewer consuming more time to filter the...
+  * Fixes: NB#129415, [AF Checked] [REGF] Video and Audio Library view...
+
+ -- Martyn Russell <martyn@lanedo.com>  Mon, 17 Aug 2009 14:30:00 +0000
+
 tracker (0.6.95-13maemo1) stable; urgency=low
 
   * Fixes: NB#132414, tracker-extract crashes in tracker_utils_...
