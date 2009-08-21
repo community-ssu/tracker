@@ -1,3 +1,9 @@
+tracker (0.6.95-16maemo1) stable; urgency=low
+
+  * Fixes: NB#96142, Duration of some video clips is not displayed
+
+ -- Ivan Frade <ivan.frade@nokia.com>  Fri, 21 Aug 2009 13:47:00 +0000
+
 tracker (0.6.95-15maemo1) stable; urgency=low
 
   * Fixes: NB#126773, trackerd and tracker-extract spam syslog
