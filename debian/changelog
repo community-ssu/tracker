@@ -1,3 +1,10 @@
+tracker (0.6.95-17maemo1) stable; urgency=low
+
+  * Fixes: NB#138043, New tracker indexer crashes
+  * Fixes: NB#114955, Usage of CPU is about 100% during long time after...
+
+ -- Martyn Russell <martyn@lanedo.com>  Thu, 10 Sep 2009 14:00:00 +0000
+
 tracker (0.6.95-16maemo1) stable; urgency=low
 
   * Fixes: NB#96142, Duration of some video clips is not displayed
