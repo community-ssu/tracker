@@ -1,3 +1,9 @@
+tracker (0.6.95-18maemo1) stable; urgency=low
+
+  * Fixes: NB#131278, Random tracker-indexer-71C9-11-2408.rcore crash...
+
+ -- Carlos Garnacho <carlos@lanedo.com>  Fri, 22 Sep 2009 17:00:00 +0000
+
 tracker (0.6.95-17maemo1) stable; urgency=low
 
   * Fixes: NB#138043, New tracker indexer crashes
