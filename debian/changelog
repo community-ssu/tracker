@@ -1,3 +1,10 @@
+tracker (0.6.95-20maemo1) stable; urgency=low
+
+  * Fixes: NB#140077, Send statistics signal only at the end of the... 
+  * Fixes: NB#126255, Image:Date is empty for some of the images
+
+ -- Martyn Russell <martyn@lanedo.com>  Tue, 29 Sep 2009 15:00:00 +0000
+
 tracker (0.6.95-19maemo1) stable; urgency=low
 
   * Fixes: NB#140077, Send statistics signal only at the end of the... 
