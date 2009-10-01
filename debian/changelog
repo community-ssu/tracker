@@ -1,3 +1,9 @@
+tracker (0.6.95-21maemo1) stable; urgency=low
+
+  * Fixes: NB#140966, tracker-indexer D-Bus interface should have a...
+
+ -- Martyn Russell <martyn@lanedo.com>  Thu,  1 Oct 2009 18:00:00 +0000
+
 tracker (0.6.95-20maemo1) stable; urgency=low
 
   * Fixes: NB#140077, Send statistics signal only at the end of the... 
