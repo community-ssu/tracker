@@ -1,3 +1,11 @@
+tracker (0.6.95-23maemo1) stable; urgency=low
+
+  * Fixes: NB#131786, [PR1.1 Proposal]trackerd crashed while doing CUD
+  * Fixes: NB#131369, [PR1.1 Proposal] Jan  1 08:14:54 Nokia-NXX-32-8...
+  * Fixes: NB#126283, [AF checked]  Top level category statistics show 2x...
+
+ -- Martyn Russell <martyn@lanedo.com>  Thu, 14 Oct 2009 16:00:00 +0000
+
 tracker (0.6.95-22maemo1) stable; urgency=low
 
   * Fixes: NB#129094, [PR1.1 Proposal]HasKeywords is wrongly set for an...
