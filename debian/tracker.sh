@@ -21,7 +21,10 @@ case "$1" in
 
   stop)
         log_begin_msg "Stopping $DESC..."
-	kill -SIGINT `ps aux |grep lib/tracker |awk '{print $1}' `
+	killall -9 hildon-thumbnailerd
+	killall -9 tracker-indexer
+	killall -9 tracker-extract
+	killall -9 trackerd
         log_end_msg $?
         ;;
   restart|force-reload)
