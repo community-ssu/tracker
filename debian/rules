@@ -9,7 +9,7 @@ include /usr/share/cdbs/1/rules/simple-patchsys.mk
 include /usr/share/cdbs/1/rules/utils.mk
 
 # Skip .svn dirs if any in the build directories
-DEB_DH_ALWAYS_EXCLUDE := .svn
+DEB_DH_ALWAYS_EXCLUDE := .svn:.svn:copyright:AUTHORS:NEWS:NEWS.gz:TODO:README:README.gz
 DEB_DH_STRIP_ARGS := --dbg-package=tracker --dbg-package=libtrackerclient --dbg-package=tracker-utils
 
 DEB_CONFIGURE_EXTRA_FLAGS := 			\
@@ -44,6 +44,9 @@ DEB_CONFIGURE_SCRIPT_ENV += LDFLAGS="-Wl,--as-needed"
 
 # Enforce tight shlibs dependencies
 # DEB_DH_MAKESHLIBS_ARGS_ALL := -V
+
+DEB_DH_INSTALLCHANGELOGS_ARGS := --no-act
+DEB_DH_INSTALLDOCS_ARGS := --no-act
 
 DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
