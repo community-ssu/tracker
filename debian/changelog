@@ -1,3 +1,9 @@
+tracker (0.6.95-24maemo2) stable; urgency=low
+
+  * Fixes: NB#146001, Awb audio clip not found by Tracker
+
+ -- Martyn Russell <martyn@lanedo.com>  Fri,  8 Jan 2010 11:00:00 +0000
+
 tracker (0.6.95-24maemo1) stable; urgency=low
 
   * Fixes: NB#147027, Hidden folders in PC become visible on the device...
