@@ -8,7 +8,7 @@ index 942997a..24ff7cd 100644
  TileMetadata=Audio:Title;Audio:Artist;Audio:Album;Audio:Genre;Audio:Duration;Audio:ReleaseDate;
 -Mimes=application/ogg;
 -MimePrefixes=audio/;
-+Mimes=audio/mpeg;audio/x-mp3;audio/x-mpeg;audio/mp3;audio/x-wav;audio/wav;audio/x-m4a;audio/x-mp2;audio/mp2;audio/x-amr;audio/AMR;audio/x-ms-wma;audio/basic;audio/mp4;
++Mimes=audio/mpeg;audio/x-mp3;audio/x-mpeg;audio/mp3;audio/x-wav;audio/wav;audio/x-m4a;audio/x-mp2;audio/mp2;audio/x-amr;audio/AMR;audio/x-ms-wma;audio/basic;audio/mp4;audio/AMR-WB;
  ShowServiceFiles=true
  ShowServiceDirectories=true
  HasMetadata=true
