@@ -995,9 +995,9 @@ get_id3v24_tags (const gchar *data,
 #endif /* ENABLE_DETAILED_METADATA */
 		{ "TEXT", "Audio:Lyrics" },
 		{ "TPE1", "Audio:Artist" },
-		{ "TPE2", "Audio:Artist" },
+		/* { "TPE2", "Audio:Artist" }, Not needed */
 		{ "TPE3", "Audio:Performer" },
-		/*	{"TOPE", "Audio:Artist"}, We dont' want the original artist for now */
+		/*	{"TOPE", "Audio:Artist"}, We don't want the original artist for now */
 #ifdef ENABLE_DETAILED_METADATA
 		{ "TPUB", "DC:Publishers" },
 #endif /* ENABLE_DETAILED_METADATA */
@@ -1273,7 +1273,7 @@ get_id3v23_tags (const gchar *data,
 #endif /* ENABLE_DETAILED_METADATA */
 		{ "TEXT", "Audio:Lyrics" },
 		{ "TPE1", "Audio:Artist" },
-		{ "TPE2", "Audio:Artist" },
+		/* { "TPE2", "Audio:Artist" }, */
 		{ "TPE3", "Audio:Performer" },
 		/*	{"TOPE", "Audio:Artist"}, We don't want the original artist for now */
 #ifdef ENABLE_DETAILED_METADATA
@@ -1535,9 +1535,9 @@ get_id3v20_tags (const gchar *data,
 		{ "TYE", "Audio:ReleaseDate" },
 		{ "TLA", "File:Lanuguage" },
 		{ "TP1", "Audio:Artist" },
-		{ "TP2", "Audio:Artist" },
+		/* { "TP2", "Audio:Artist" }, */
 		{ "TP3", "Audio:Performer" },
-		{ "TEN", "Audio:Performer" },
+		/* { "TEN", "Audio:Performer" }, */
 		{ "TCO", "Audio:Genre" },
 		{ "TCR", "File:Copyright" },
 		{ "SLT", "Audio:Lyrics" },
