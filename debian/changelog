@@ -1,3 +1,9 @@
+tracker (0.6.95-25maemo1) stable; urgency=low
+
+  * Fixes: NB#137788, Try first TPE1 instead of TP2 for the Audio:Ar...
+	
+ -- Martyn Russell <martyn@lanedo.com>  Thu, 21 Jan 2010 15:30:00 +0000
+
 tracker (0.6.95-24maemo2) stable; urgency=low
 
   * Fixes: NB#146001, Awb audio clip not found by Tracker
