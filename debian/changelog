@@ -1,8 +1,10 @@
 tracker (0.6.95-26maemo1) stable; urgency=low
 
-  * Fixes MB#9316, Tracker doesn't run album art heuristics for non-mp3
+  * Fixes: MB#9316, Tracker doesn't run album art heuristics for non-mp3
     audio files.
   * Fixes: MB#9317, Tracker doesn't import album art from .mediaartlocal at all.
+  * Fixes: MB#7635, Tracker still trying and failing to index non-existant
+    /home/user/MyDocs/.camera.
 	
  -- Marc Ordinas i Llopis <marc.ordinasillopis@collabora.co.uk>  Fri, 12 Mar 2010 15:30:00 +0000
 

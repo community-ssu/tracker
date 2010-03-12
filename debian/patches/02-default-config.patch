@@ -50,7 +50,7 @@ index f2a900f..9bbcf8f 100644
 +		"$HOME/MyDocs/.documents/", 
 +		"$HOME/MyDocs/.videos/", 
 +		"$HOME/MyDocs/.images/", 
-+		"$HOME/MyDocs/.camera/",
++		"$HOME/MyDocs/DCIM/",
 +		NULL 
 +	};
  
