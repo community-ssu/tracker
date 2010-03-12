@@ -879,22 +879,11 @@ tracker_extract_gstreamer (const gchar *uri,
 	extract_metadata (extractor, metadata);
 
 	/* Save embedded art */
-	if (extractor->album_art_data && extractor->album_art_size) {
-#ifdef HAVE_GDKPIXBUF
-		tracker_process_albumart (extractor->album_art_data, extractor->album_art_size, extractor->album_art_mime,
-					  /* g_hash_table_lookup (metadata, "Audio:Artist") */ NULL,
-					  g_hash_table_lookup (metadata, "Audio:Album"),
-					  g_hash_table_lookup (metadata, "Audio:AlbumTrackCount"),
-					  uri);
-#else
-		tracker_process_albumart (NULL, 0, NULL,
-					  /* g_hash_table_lookup (metadata, "Audio:Artist") */ NULL,
-					  g_hash_table_lookup (metadata, "Audio:Album"),
-					  g_hash_table_lookup (metadata, "Audio:AlbumTrackCount"),
-					  uri);
-		
-#endif /* HAVE_GDKPIXBUF */
-	}
+	tracker_process_albumart (extractor->album_art_data, extractor->album_art_size, extractor->album_art_mime,
+				  /* g_hash_table_lookup (metadata, "Audio:Artist") */ NULL,
+				  g_hash_table_lookup (metadata, "Audio:Album"),
+				  g_hash_table_lookup (metadata, "Audio:AlbumTrackCount"),
+				  uri);
 
 	gst_element_set_state (extractor->pipeline, GST_STATE_NULL);
 	gst_element_get_state (extractor->pipeline, NULL, NULL, TRACKER_EXTRACT_GUARD_TIMEOUT* GST_SECOND);
