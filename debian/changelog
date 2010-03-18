@@ -1,3 +1,9 @@
+tracker (0.6.95-27maemo1) stable; urgency=low
+
+  * Fixes: NB#131363 fix un-unsynchronisation in ID3v2, patch by Ottela Mikael
+
+ -- Alban Crequy <alban.crequy@collabora.co.uk>  Thu, 18 Mar 2010 12:49:00 +0000
+
 tracker (0.6.95-26maemo1) stable; urgency=low
 
   * Fixes: MB#9316, Tracker doesn't run album art heuristics for non-mp3
