@@ -1619,6 +1619,19 @@ get_id3v20_tags (const gchar *identifier,
 
 }
 
+static gboolean
+is_valid_identifier (gchar *s, int size)
+{
+	int i;
+	for (i = 0 ; i < size ; i++) {
+		if (! ((s[i] >= 'A' && s[i] <= 'Z') ||
+		       (s[i] >= '0' && s[i] <= '9')))
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
 static void
 parse_id3v24 (const gchar *data,
 	      size_t       size,
@@ -1673,12 +1686,16 @@ parse_id3v24 (const gchar *data,
 		}
 	}
 
-	while (pos < size) {
+	while (pos < size && pos < 10 + tsize) {
 		const gchar *identifier = &data[pos];
 		size_t csize;
 		unsigned short flags;
 
 		if (pos + 10 > size) {
+			return;
+		}
+
+		if (!is_valid_identifier (identifier, 4)) {
 			return;
 		}
 
@@ -1688,9 +1705,14 @@ parse_id3v24 (const gchar *data,
 			 ((data[pos+7] & 0x7F) << 0));
 
 		if (pos + 10 + csize > size ||
-		    csize > size ||
-		    csize == 0) {
+		    csize > size) {
 			break;
+		}
+
+		/* This tag size is zero. Continue to next tag. */
+		if (csize == 0) {
+			pos += 10 + csize;
+			continue;
 		}
 
 		flags = (((unsigned char) (data[pos + 8]) << 8) +
@@ -1790,12 +1812,16 @@ parse_id3v23 (const gchar *data,
 		}
 	}
 
-	while (pos < size) {
+	while (pos < size && pos < 10 + tsize) {
 		const gchar *identifier = &data[pos];
 		size_t csize;
 		unsigned short flags;
 
 		if (pos + 10 > size) {
+			return;
+		}
+
+		if (!is_valid_identifier (identifier, 4)) {
 			return;
 		}
 
@@ -1805,9 +1831,14 @@ parse_id3v23 (const gchar *data,
 			 ((unsigned char)(data[pos + 7]) << 0) );
 
 		if ((pos + 10 + csize > size) ||
-		    (csize > size) ||
-		    (csize == 0)) {
+		    (csize > size)) {
 			break;
+		}
+
+		/* This tag size is zero. Continue to next tag. */
+		if (csize == 0) {
+			pos += 10 + csize;
+			continue;
 		}
 
 		flags = (((unsigned char)(data[pos + 8]) << 8) +
@@ -1874,7 +1905,7 @@ parse_id3v20 (const gchar *data,
 
 	pos = 10;
 
-	while (pos < size) {
+	while (pos < size && pos < 6 + tsize) {
 		const gchar *identifier = &data[pos];
 		size_t csize;
 
@@ -1882,13 +1913,22 @@ parse_id3v20 (const gchar *data,
 			return;
 		}
 
+		if (!is_valid_identifier (identifier, 3)) {
+			return;
+		}
+
 		csize = (((unsigned char)(data[pos + 3]) << 16) +
 			 ((unsigned char)(data[pos + 4]) << 8) +
 			 ((unsigned char)(data[pos + 5]) ) );
 		if ((pos + 6 + csize > size) ||
-		    (csize > size) ||
-		    (csize == 0)) {
+		    (csize > size)) {
 			break;
+		}
+
+		/* This tag size is zero. Continue to next tag. */
+		if (csize == 0) {
+			pos += 6 + csize;
+			continue;
 		}
 
 		pos += 6;
