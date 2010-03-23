@@ -1696,7 +1696,7 @@ parse_id3v24 (const gchar *data,
 		}
 
 		if (!is_valid_identifier (identifier, 4)) {
-			return;
+			break;
 		}
 
 		csize = (((data[pos+4] & 0x7F) << 21) |
@@ -1822,7 +1822,7 @@ parse_id3v23 (const gchar *data,
 		}
 
 		if (!is_valid_identifier (identifier, 4)) {
-			return;
+			break;
 		}
 
 		csize = (((unsigned char)(data[pos + 4]) << 24) |
@@ -1914,7 +1914,7 @@ parse_id3v20 (const gchar *data,
 		}
 
 		if (!is_valid_identifier (identifier, 3)) {
-			return;
+			break;
 		}
 
 		csize = (((unsigned char)(data[pos + 3]) << 16) +
