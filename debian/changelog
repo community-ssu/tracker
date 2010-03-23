@@ -1,3 +1,9 @@
+tracker (0.6.95-29maemo1) stable; urgency=low
+
+  * Fixes: NB#161370 Fix regression on 'Audio:Duration'
+
+ -- Alban Crequy <alban.crequy@collabora.co.uk>  Tue, 23 Mar 2010 15:56:04 +0000
+
 tracker (0.6.95-28maemo1) stable; urgency=low
 
   * Fixes: NB#161370 Don't stop parsing mp3 tags on empty tags
