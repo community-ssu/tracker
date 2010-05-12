@@ -51,7 +51,7 @@
 #define TRACKER_DB_MAX_FILE_SIZE      2000000000 
 
 /* Set current database version we are working with */
-#define TRACKER_DB_VERSION_NOW        TRACKER_DB_VERSION_4
+#define TRACKER_DB_VERSION_NOW        TRACKER_DB_VERSION_5
 #define TRACKER_DB_VERSION_FILE       "db-version.txt"
 
 typedef enum {
@@ -65,8 +65,8 @@ typedef enum {
 	TRACKER_DB_VERSION_1,       /* Version 0.6.6  (before indexer-split) */
 	TRACKER_DB_VERSION_2,       /* Version 0.6.90 (after  indexer-split) */
 	TRACKER_DB_VERSION_3,       /* Version 0.6.91 (stable release) */
-	TRACKER_DB_VERSION_4,       /* Version 0.6.92 (current TRUNK) */
-	TRACKER_DB_VERSION_5        /* Version 0.7    (vstore branch) */
+	TRACKER_DB_VERSION_4,       /* Version 0.6.92 */
+	TRACKER_DB_VERSION_5        /* Version 0.6.95 (with Composer tag) */
 } TrackerDBVersion;
 
 typedef struct {
