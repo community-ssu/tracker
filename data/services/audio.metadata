@@ -14,6 +14,14 @@ Parent=DC:Creator
 Weight=15
 Filtered=false
 
+[Audio:Composer]
+DisplayName=Composer
+Description=Track composer
+DataType=index
+Parent=DC:Creator
+Weight=12
+Filtered=false
+
 [Audio:Album]
 DisplayName=Title
 Description=Track title
