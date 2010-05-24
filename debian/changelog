@@ -1,3 +1,9 @@
+tracker (0.6.95-33maemo1) stable; urgency=low
+
+  * Fixes: NB#166935 Memory leak in tracker-indexer
+
+ -- Alban Crequy <alban.crequy@collabora.co.uk>  Mon, 24 May 2010 18:04:14 +0100
+
 tracker (0.6.95-32maemo1) stable; urgency=low
 
   * Fixes: NB#131363 fix un-unsynchronisation in ID3v2, patch by Ottela Mikael
