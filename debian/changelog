@@ -1,3 +1,11 @@
+tracker (0.6.95-32maemo1) stable; urgency=low
+
+  * Fixes: NB#131363 fix un-unsynchronisation in ID3v2, patch by Ottela Mikael
+  * Fixes: NB#156985 Add tag Composer
+  * Fixes: NB#169562 Avoid regenerating thumbnails unnecessarily every 3 days
+
+ -- Alban Crequy <alban.crequy@collabora.co.uk>  Mon, 24 May 2010 16:14:42 +0100
+
 tracker (0.6.95-25maemo1) stable; urgency=low
 
   * Fixes: NB#137788, Try first TPE1 instead of TP2 for the Audio:Ar...
