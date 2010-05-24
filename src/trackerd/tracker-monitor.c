@@ -995,6 +995,7 @@ libinotify_monitor_force_emission (TrackerMonitor *monitor,
 		g_debug ("Cached event:%d being handled before %s",
 			 data->event_type,
 			 event_type_str);
+		g_free (event_type_str);
 
 		/* Signal event */
 		libinotify_cached_event_handle (monitor,
