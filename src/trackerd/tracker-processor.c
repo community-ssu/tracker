@@ -850,6 +850,8 @@ item_queue_handlers_cb (gpointer user_data)
 										  (const gchar**) strv_to,
 										  item_queue_processed_cb,
 										  processor);
+				g_free (strv_from);
+				g_free (strv_to);
 			} else {
 				const gchar *source;
 				const gchar *target;
