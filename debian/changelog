@@ -1,3 +1,9 @@
+tracker (0.6.95-34maemo1) stable; urgency=low
+
+  * Fixes: NB#166935 More memory leaks detected by valgrind
+
+ -- Alban Crequy <alban.crequy@collabora.co.uk>  Fri, 04 Jun 2010 14:18:23 +0100
+
 tracker (0.6.95-33maemo1) stable; urgency=low
 
   * Fixes: NB#166935 Memory leak in tracker-indexer
