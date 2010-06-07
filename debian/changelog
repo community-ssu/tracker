@@ -1,3 +1,9 @@
+tracker (0.6.95-35maemo1) stable; urgency=low
+
+  * Fixes: NB#162689 Recompilation with G_DISABLE_CAST_CHECKS
+
+ -- Alban Crequy <alban.crequy@collabora.co.uk>  Mon, 07 Jun 2010 11:12:38 +0100
+
 tracker (0.6.95-34maemo1) stable; urgency=low
 
   * Fixes: NB#166935 More memory leaks detected by valgrind
