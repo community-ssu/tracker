@@ -452,6 +452,16 @@ path_should_be_ignored_for_media (TrackerProcessor *processor,
 
 	g_list_free (roots);
 
+	GSList *i = tracker_config_get_no_watch_directory_roots(processor->private->config);
+	for (; i && !ignore; i = i->next) {
+		if (strcmp (path, i->data) == 0) {
+			ignore = TRUE;
+		}
+		if (g_str_has_prefix (path, i->data)) {
+			ignore = TRUE;
+		}
+	}
+
 	return ignore;
 }
 
