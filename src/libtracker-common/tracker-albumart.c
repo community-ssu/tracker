@@ -389,6 +389,14 @@ tracker_albumart_heuristic (const gchar *artist_,
 	gchar *artist = NULL;
 	gchar *album = NULL;
 
+	if (artist_) {
+		artist = tracker_albumart_strip_invalid_entities (artist_);
+	}
+
+	if (album_) {
+		album = tracker_albumart_strip_invalid_entities (album_);
+	}
+
 	/* Copy from local album art (.mediaartlocal) to spec */
 	if (local_uri) {
 		GFile *local_file;
@@ -448,14 +456,6 @@ tracker_albumart_heuristic (const gchar *artist_,
 	}
 
 	count = st.st_nlink;
-
-	if (artist_) {
-		artist = tracker_albumart_strip_invalid_entities (artist_);
-	}
-
-	if (album_) {
-		album = tracker_albumart_strip_invalid_entities (album_);
-	}
 
 	/* If amount of files and amount of tracks in the album somewhat match */
 
