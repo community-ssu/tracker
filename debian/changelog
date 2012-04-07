@@ -1,3 +1,11 @@
+tracker (0.6.95-35maemo1+0m5+0cssu0) stable; urgency=low
+
+  * Fixes: #9316 Tracker doesn't run album art heuristics for non-mp3 audio files
+  * Fixes: #9317 Tracker doesn't import album art from .mediaartlocal at all
+  * Properly care about NoWatch list for discovered removable devices
+
+ -- Christian Ratzenhofer <christian_ratzenhofer@yahoo.de>  Sat,  7 Apr 2012 15:59:21 +0200
+
 tracker (0.6.95-35maemo1) stable; urgency=low
 
   * Fixes: NB#162689 Recompilation with G_DISABLE_CAST_CHECKS
