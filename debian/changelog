@@ -1,7 +1,6 @@
 tracker (0.6.95-35maemo1+0m5+0cssu1) stable; urgency=low
 
-  * Version bump to fix (build produced) dependency on libpoppler from 
-extras devel
+  * Version bump to fix (build produced) dependency on libpoppler from extras devel
 
  -- Christian Ratzenhofer <christian.ratzenhofer@cdnm.at>  Wed, 29 May 2013 16:39:59 +0200
 
