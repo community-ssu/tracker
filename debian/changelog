@@ -1,3 +1,9 @@
+tracker (0.6.95-35maemo1+0m5+0cssu1+thumb0) stable; urgency=low
+
+  * Thumb2 compiled
+
+ -- Ivaylo Dimitrov <freemangordon@abv.bg>  Sat, 13 Jul 2013 15:08:22 +0300
+
 tracker (0.6.95-35maemo1+0m5+0cssu1) stable; urgency=low
 
   * Version bump to fix (build produced) dependency on libpoppler from extras devel

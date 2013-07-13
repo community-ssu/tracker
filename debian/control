@@ -23,7 +23,7 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, shared-mime-info, dbus,
   libhal1, libhal-storage1, hildon-thumbnail (>= 3.0.10), libexempi3,
   libjpeg62, libgstreamer0.10-0, libgstreamer-plugins-base0.10-0,
   libtiff4 (>= 3.8.2), libxml2, libpoppler0c2-glib,
-  libtotem-plparser12, libiptcdata0, libenca0, mce
+  libtotem-plparser12, libiptcdata0, libenca0, mce, kernel-feature-errata-430973-workaround[armel]
 Recommends: tracker-utils, unzip, wv, poppler-utils | xpdf-utils,
   xsltproc, w3m, untex, o3read
 Suggests: evince, djvulibre-bin, gnumeric
@@ -44,7 +44,7 @@ Description: Tracker documentation package.
 Package: libtrackerclient0
 Architecture: any
 Section: libs
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, kernel-feature-errata-430973-workaround[armel]
 Description: Tracker client side library to access indexed data.
 
 Package: libtrackerclient0-dbg
